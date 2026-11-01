@@ -1,4 +1,4 @@
-import type { Frame } from "../trace";
+import type { Frame } from "../core/types";
 
 type Track = { x: number[]; y: number[] };
 type Box = { x: number; y: number; width: number; height: number };

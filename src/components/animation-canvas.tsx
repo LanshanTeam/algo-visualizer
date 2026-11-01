@@ -17,7 +17,7 @@ import {
   type AnimationScene,
   type SceneLink,
 } from "./animation-scene";
-import type { Frame } from "../trace";
+import type { Frame } from "../core/types";
 
 const palette = {
   active: { stroke: "#2563eb", fill: "#eff6ff" },

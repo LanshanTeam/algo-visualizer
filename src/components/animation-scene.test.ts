@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { linkedListTrace, quickSortTrace, type Frame } from "../trace";
+import type { Frame } from "../core/types";
+import { linkedListTrace } from "../topics/linear/linked-list";
+import { quickSortTrace } from "../topics/sorting-searching/quick-sort";
 import {
   connectionPathAt,
   createAnimationScene,

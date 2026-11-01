@@ -14,9 +14,17 @@ pnpm build
 
 ## 页面
 
-- 单链表：按索引查询、插入、删除。
-- 快速排序：Lomuto 分区与递归调用栈。
-- 两页均提供原理、动画、C / C++ / Python / Go / Rust 代码，支持单步、回退、倍速与跳转。
+已上线：单链表（按索引查询、插入、删除）、快速排序（Lomuto 分区与递归调用栈）。两者均提供原理、动画、C / C++ / Python / Go / Rust 代码，支持单步、回退、倍速与跳转。
+
+其余专题已在侧边栏注册并标记 `WIP`，点击后展示占位页；实现后把该条 `plannedTopic(...)` 换成 ready 定义即可上线。
+
+## 扩展专题
+
+1. 在所属域目录下新建 `<id>.ts`，导出 `ReadyTopic`：`trace` 产出 `Frame[]`，`code` 用 `parseCode` 解析带 `@anchor` 的多语言模板，元数据声明 `controls`、`legend` 与 `theory`。
+2. 把该域 `index.ts` 中对应的 `plannedTopic(...)` 替换为新模块。
+3. 需要新画布布局时，先扩展 `SceneKind` 与 `ImplementedSceneKind`，再在 `createAnimationScene` 中实现；类型会阻止未实现的布局被标记为 ready。
+
+`src/App.tsx` 只负责路由与外壳，工作台完全由 `TopicDefinition` 驱动，新增专题无需改动它。
 
 ## 组件与样式
 
@@ -28,10 +36,15 @@ pnpm build
 
 ## 模块
 
-- `src/trace.ts`：生成步骤快照。
-- `src/code.ts`：多语言代码和步骤映射。
-- `src/App.tsx`：工作台与播放控制。
-- `src/components/topic-sidebar.tsx`：专题导航。
+- `src/core/types.ts`：`Frame`、`Language`、`CodeLine` 等共享契约。
+- `src/core/code.ts`：`parseCode` 与语言列表。
+- `src/core/trace.ts`：输入校验。
+- `src/topics/types.ts`：`TopicDefinition` 判别联合（ready / planned）与注册工具。
+- `src/topics/<domain>/`：按线性结构、树与散列、图论、排序与搜索划分的专题实现，各自持有 trace、代码模板与元数据。
+- `src/topics/registry.ts`：聚合专题、校验重复 id、产出侧边栏分组。
+- `src/App.tsx`：路由、页头与侧边栏外壳。
+- `src/components/topic-workspace.tsx`：由专题声明驱动的工作台与播放控制。
+- `src/components/topic-sidebar.tsx`：按分组渲染的专题导航。
 - `src/components/animation-scene.ts`：统一生成节点、标注、连线及分阶段轨迹，拥有空间约束。
 - `src/components/animation-canvas.tsx`：将场景模型绘制为 SVG，不决定布局和动作顺序。
 
