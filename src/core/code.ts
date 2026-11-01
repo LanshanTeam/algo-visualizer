@@ -1,6 +1,6 @@
 import type { CodeLine, Language } from "./types";
 
-export const languages: Language[] = ["C", "C++", "Python", "Go", "Rust"];
+export const languages: Language[] = ["C", "C++", "Python", "Go", "Java", "Rust"];
 
 /** 行尾的语义标记：`// @anchor` 或 `# @anchor`。 */
 const ANCHOR = /\s*(?:\/\/|#)\s*@(\w+)\s*$/;

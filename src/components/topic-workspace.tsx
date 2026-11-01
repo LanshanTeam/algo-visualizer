@@ -4,6 +4,7 @@ import {
   useMemo,
   useState,
   type ComponentProps,
+  type CSSProperties,
 } from "react";
 import {
   ArrowLeft,
@@ -490,16 +491,17 @@ export function TopicWorkspace({ topic }: { topic: ReadyTopic }) {
               onValueChange={(next) => setLanguage(next as Language)}
               className="flex min-h-0 flex-col xl:flex-1"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
                 <TabsList
                   aria-label="代码语言"
-                  className="grid w-full grid-cols-5"
+                  style={{ "--lang-cols": String(languages.length) } as CSSProperties}
+                  className="grid h-auto w-full grid-cols-3 min-[360px]:h-9 min-[360px]:[grid-template-columns:repeat(var(--lang-cols),minmax(0,1fr))]"
                 >
                   {languages.map((lang) => (
                     <TabsTrigger
                       key={lang}
                       value={lang}
-                      className="px-1 text-xs sm:px-3 sm:text-sm"
+                      className="px-1 text-[11px] min-[400px]:text-xs sm:px-2 sm:text-sm"
                     >
                       {lang}
                     </TabsTrigger>

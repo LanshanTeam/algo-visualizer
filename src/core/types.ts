@@ -1,6 +1,6 @@
 /** 全站共享的数据契约。专题模块只依赖这里，不互相引用。 */
 
-export type Language = "C" | "C++" | "Python" | "Go" | "Rust";
+export type Language = "C" | "C++" | "Python" | "Go" | "Java" | "Rust";
 
 /**
  * 动画画布支持的布局模型。

@@ -58,6 +58,20 @@ const templates: Record<Language, string> = {
     quickSort(a, low, i - 1) // @recurse
     quickSort(a, i + 1, high)
 } // @done`,
+  Java: `void quickSort(int[] a, int low, int high) { // @start
+    if (low >= high) return; // @base
+    int pivot = a[high]; // @pivot
+    int i = low;
+    for (int j = low; j < high; j++) {
+        if (a[j] < pivot) { // @compare
+            int temp = a[i]; a[i] = a[j]; a[j] = temp; // @swap
+            i++; // @advance
+        }
+    }
+    int temp = a[i]; a[i] = a[high]; a[high] = temp; // @place
+    quickSort(a, low, i - 1); // @recurse
+    quickSort(a, i + 1, high);
+} // @done`,
   Rust: `fn quick_sort(a: &mut [i32]) { // @start
     if a.len() <= 1 { return; } // @base
     let high = a.len() - 1;

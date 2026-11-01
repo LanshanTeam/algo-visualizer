@@ -117,6 +117,34 @@ const templates: Record<Language, Record<string, string>> = {
     return curr.value // @result
 } // @done`,
   },
+  Java: {
+    insert: `Node insert(Node head, int index, int value) { // @start
+    Node prev = null, curr = head;
+    for (int i = 0; i < index; i++) {
+        prev = curr; curr = curr.next; // @walk
+    }
+    Node node = new Node(value); // @allocate
+    node.next = curr; // @connect
+    if (prev != null) prev.next = node; else head = node; // @commit
+    return head;
+} // @done`,
+    delete: `Node remove(Node head, int index) { // @start
+    Node prev = null, curr = head;
+    for (int i = 0; i < index; i++) {
+        prev = curr; curr = curr.next; // @walk
+    }
+    if (prev != null) prev.next = curr.next; else head = curr.next; // @bypass
+    curr = null; // @remove
+    return head;
+} // @done`,
+    find: `int get(Node head, int index) { // @start
+    Node curr = head;
+    for (int i = 0; i < index; i++) {
+        curr = curr.next; // @walk
+    }
+    return curr.value; // @result
+} // @done`,
+  },
   Rust: {
     insert: `fn insert(head: &mut Option<Box<Node>>, index: usize, value: i32) { // @start
     let mut link = head;
