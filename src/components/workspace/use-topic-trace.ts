@@ -1,0 +1,202 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { parseValues } from "../../core/trace";
+import type { Language, TraceInput } from "../../core/types";
+import type { ReadyTopic } from "../../topics/types";
+
+const DEFAULT_INDEX = 2;
+const DEFAULT_VALUE = 31;
+
+export function useTopicTrace(topic: ReadyTopic) {
+  const controls = topic.controls;
+  const initialOperation = controls.operations?.[0]?.id ?? "";
+  const [language, setLanguage] = useState<Language>("C");
+  const [values, setValues] = useState(controls.defaultValues);
+  const [input, setInput] = useState(() => controls.defaultValues.join(", "));
+  const [operation, setOperation] = useState(initialOperation);
+  const [index, setIndex] = useState(DEFAULT_INDEX);
+  const [value, setValue] = useState(DEFAULT_VALUE);
+  const [frames, setFrames] = useState(() =>
+    topic.trace({
+      values: controls.defaultValues,
+      operation: initialOperation,
+      index: DEFAULT_INDEX,
+      value: DEFAULT_VALUE,
+    }),
+  );
+  const [step, setStep] = useState(0);
+  const [previousStep, setPreviousStep] = useState<number | null>(null);
+  const [traceVersion, setTraceVersion] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [stepMode, setStepMode] = useState<"manual" | "automatic">("manual");
+  const [animating, setAnimating] = useState(false);
+  const [speed, setSpeed] = useState(1);
+  const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
+  const frame = frames[step];
+  const capacity = useMemo(
+    () => Math.max(...frames.map((frame) => frame.items.length)),
+    [frames],
+  );
+  const code = useMemo(
+    () => topic.code(language, operation),
+    [topic, language, operation],
+  );
+  const hasTheory = !!topic.theory?.length;
+  const showValue =
+    !!controls.value &&
+    (!controls.value.onlyFor || controls.value.onlyFor.includes(operation));
+  const fieldCount =
+    (controls.operations ? 1 : 0) + (controls.index ? 1 : 0) + (showValue ? 1 : 0);
+
+  function load(
+    nextValues = values,
+    nextOperation = operation,
+    nextIndex = index,
+    nextValue = value,
+  ) {
+    try {
+      const next: TraceInput = {
+        values: nextValues,
+        operation: nextOperation,
+        index: nextIndex,
+        value: nextValue,
+      };
+      setFrames(topic.trace(next));
+      setStep(0);
+      setPreviousStep(null);
+      setTraceVersion((version) => version + 1);
+      setPlaying(false);
+      setStepMode("manual");
+      setAnimating(false);
+      setValues(nextValues);
+      setError("");
+      return true;
+    } catch (cause) {
+      setError((cause as Error).message);
+      return false;
+    }
+  }
+  useEffect(() => {
+    if (!playing) return;
+    const timer = setTimeout(() => {
+      if (step >= frames.length - 1) setPlaying(false);
+      else {
+        setStepMode("automatic");
+        setPreviousStep(step);
+        setStep(step + 1);
+      }
+    }, 1400 / speed);
+    return () => clearTimeout(timer);
+  }, [playing, step, frames.length, speed]);
+  const seek = useCallback(
+    (next: number) => {
+      setPlaying(false);
+      setStepMode("manual");
+      const target = Math.max(0, Math.min(frames.length - 1, next));
+      if (target === step) return;
+      setPreviousStep(
+        !animating && Math.abs(target - step) === 1 ? step : null,
+      );
+      setStep(target);
+    },
+    [frames.length, step, animating],
+  );
+  const togglePlayback = useCallback(() => {
+    if (!playing && step === frames.length - 1) {
+      setPreviousStep(null);
+      setStep(0);
+    }
+    setStepMode("automatic");
+    setPlaying((p) => !p);
+  }, [playing, step, frames.length]);
+  useEffect(() => {
+    const key = (event: KeyboardEvent) => {
+      if (
+        event.defaultPrevented ||
+        (event.target as HTMLElement).closest(
+          'input,select,textarea,button,a,[role="slider"],[role="tab"]',
+        )
+      )
+        return;
+      if (event.code === "Space") {
+        event.preventDefault();
+        togglePlayback();
+      }
+      if (animating && ["ArrowRight", "ArrowLeft"].includes(event.key)) {
+        event.preventDefault();
+        return;
+      }
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        seek(step + 1);
+      }
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        seek(step - 1);
+      }
+    };
+    addEventListener("keydown", key);
+    return () => removeEventListener("keydown", key);
+  }, [step, seek, animating, togglePlayback]);
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 1500);
+    return () => clearTimeout(timer);
+  }, [copied]);
+  function apply() {
+    try {
+      load(parseValues(input, controls.limit));
+    } catch (cause) {
+      setError((cause as Error).message);
+    }
+  }
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(
+        code.map((line) => line.text).join("\n"),
+      );
+      setCopied(true);
+    } catch {
+      setError("复制失败，请手动选择代码。");
+    }
+  }
+
+  return {
+    language,
+    setLanguage,
+    values,
+    input,
+    setInput,
+    operation,
+    setOperation,
+    index,
+    setIndex,
+    value,
+    setValue,
+    frames,
+    step,
+    previousStep,
+    traceVersion,
+    playing,
+    stepMode,
+    animating,
+    setAnimating,
+    speed,
+    setSpeed,
+    error,
+    copied,
+    frame,
+    capacity,
+    code,
+    hasTheory,
+    showValue,
+    fieldCount,
+    load,
+    seek,
+    togglePlayback,
+    apply,
+    copy,
+  };
+}
+
+export type TopicTrace = ReturnType<typeof useTopicTrace>;

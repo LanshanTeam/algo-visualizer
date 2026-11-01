@@ -43,10 +43,14 @@ pnpm build
 - `src/topics/<domain>/`：按线性结构、树与散列、图论、排序与搜索划分的专题实现，各自持有 trace、代码模板与元数据。
 - `src/topics/registry.ts`：聚合专题、校验重复 id、产出侧边栏分组。
 - `src/App.tsx`：路由、页头与侧边栏外壳。
-- `src/components/topic-workspace.tsx`：由专题声明驱动的工作台与播放控制。
+- `src/components/topic-workspace.tsx`：组合动画面板与代码面板。
+- `src/components/workspace/`：`use-topic-trace.ts` 持有播放状态与交互，`animation-card.tsx`、`playback-bar.tsx`、`code-card.tsx` 负责呈现。
 - `src/components/topic-sidebar.tsx`：按分组渲染的专题导航。
-- `src/components/animation-scene.ts`：统一生成节点、标注、连线及分阶段轨迹，拥有空间约束。
+- `src/components/animation-scene.ts`：组装节点、标注、连线及分阶段轨迹。
+- `src/components/scene-geometry.ts`：轨迹插值与连线路径计算。
+- `src/components/scene-layout.ts`：节点尺寸、轨道与让位时序。
 - `src/components/animation-canvas.tsx`：将场景模型绘制为 SVG，不决定布局和动作顺序。
+- `src/components/canvas-primitives.tsx`：节点、连线、尾指针与标注等 SVG 原语。
 
 代码面板提供教学片段，不在浏览器中执行。链表代码假定已定义包含 `value` 与 `next` 的 `Node`，C 片段需要 `<stdlib.h>`，C++ 片段需要标准库头文件。索引由界面校验。演示快照的存储不计入算法空间复杂度。
 

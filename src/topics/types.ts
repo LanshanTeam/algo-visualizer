@@ -18,8 +18,6 @@ export const TOPIC_GROUPS = [
 
 export type TopicGroupId = (typeof TOPIC_GROUPS)[number]["id"];
 
-export type TopicStatus = "ready" | "planned";
-
 /** 动画图例，tone 对应画布的配色。 */
 export interface LegendEntry {
   label: string;

@@ -2,7 +2,7 @@ import { Binary, GitFork, Hash, Network, Workflow } from "lucide-react";
 import { plannedTopic, type TopicDefinition } from "../types";
 
 /**
- * 成员 C 的领地：散列与树形结构。
+ * 树与散列专题：哈希表、二叉树、BST、堆、并查集。
  * 树 / 堆需要 2D 布局，等 scene 层支持 `tree` 后再把 status 改成 ready。
  */
 export const treeHashTopics: TopicDefinition[] = [

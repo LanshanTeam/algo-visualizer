@@ -3,7 +3,7 @@ import { plannedTopic, type TopicDefinition } from "../types";
 import { quickSort } from "./quick-sort";
 
 /**
- * 成员 B 的领地：排序与搜索。
+ * 排序与搜索专题：二分搜索与各类排序。
  * 全部复用 1D 数组场景，只需产出快照与代码锚点。
  */
 export const sortingSearchingTopics: TopicDefinition[] = [

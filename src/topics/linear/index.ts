@@ -3,7 +3,7 @@ import { plannedTopic, type TopicDefinition } from "../types";
 import { linkedList } from "./linked-list";
 
 /**
- * 成员 A 的领地：一维线性结构。
+ * 一维线性结构专题：数组、链表、栈、队列。
  * 把 `plannedTopic(...)` 换成同名模块导出的 ready 定义即可上线。
  */
 export const linearTopics: TopicDefinition[] = [

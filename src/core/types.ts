@@ -35,8 +35,6 @@ export interface Frame {
   links?: Array<[number, number]>;
   detached?: number;
   headId?: number | null;
-  /** 树 / 图场景的显式节点坐标（逻辑单位），由 scene 层消费。 */
-  positions?: Record<number, { x: number; y: number }>;
 }
 
 export interface CodeLine {
