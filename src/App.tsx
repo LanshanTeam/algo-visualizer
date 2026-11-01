@@ -255,21 +255,24 @@ export default function App() {
   return (
     <SidebarProvider>
       <TopicSidebar topic={topic} onNavigate={navigate} />
-      <SidebarInset className="min-w-0">
+      <SidebarInset className="min-w-0 xl:h-dvh">
         <header className="flex h-16 shrink-0 items-center gap-3 border-b px-4 md:px-6">
           <SidebarTrigger aria-label="切换导航" />
           <Separator orientation="vertical" className="h-4" />
           <h1 className="text-lg font-semibold">{titles[topic]}</h1>
         </header>
-        <div className="mx-auto grid w-full max-w-[1600px] gap-6 p-4 md:p-6">
-          <div className="grid min-w-0 items-start gap-6 xl:grid-cols-2">
-            <Card className="min-w-0" aria-labelledby="animation-title">
+        <div className="mx-auto w-full max-w-[1600px] p-4 md:p-6 xl:min-h-0 xl:flex-1">
+          <div className="flex flex-col gap-6 xl:h-full xl:flex-row">
+            <Card
+              className="flex min-w-0 flex-col xl:min-h-0 xl:flex-1"
+              aria-labelledby="animation-title"
+            >
               <CardHeader>
                 <CardTitle>
                   <h2 id="animation-title">动画</h2>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-3 xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
                 <div className="space-y-2">
                   <Label htmlFor="values">{linked ? "初始链表" : "数组"}</Label>
                   <div className="flex gap-2">
@@ -363,6 +366,7 @@ export default function App() {
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
+                <Separator className="-mx-6 w-auto" />
                 <AnimationCanvas
                   key={traceVersion}
                   frame={frame}
@@ -403,6 +407,18 @@ export default function App() {
                     </Badge>
                   )}
                 </div>
+                {!linked && frame.stack.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <span className="text-muted-foreground">调用栈</span>
+                    {frame.stack.map((entry, i) => (
+                      <Badge variant="secondary" className="font-mono" key={i}>
+                        {entry}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+              <div className="shrink-0 space-y-3 border-t px-6 pb-6 pt-4">
                 <p
                   className="min-h-6 text-sm leading-relaxed max-sm:min-h-10"
                   aria-live="polite"
@@ -479,123 +495,134 @@ export default function App() {
                     </SelectContent>
                   </Select>
                 </div>
-                {!linked && frame.stack.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-2 text-xs">
-                    <span className="text-muted-foreground">调用栈</span>
-                    {frame.stack.map((entry, i) => (
-                      <Badge variant="secondary" className="font-mono" key={i}>
-                        {entry}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
+              </div>
             </Card>
-            <Card className="min-w-0" aria-labelledby="code-title">
-              <CardHeader className="relative space-y-0">
-                <CardTitle className="pr-10">
-                  <h2 id="code-title">代码</h2>
-                </CardTitle>
-                <IconButton
-                  className="absolute right-6 top-1/2 -translate-y-1/2"
-                  label={copied ? "已复制" : "复制代码"}
-                  onClick={copy}
-                >
-                  {copied ? <Check /> : <Copy />}
-                </IconButton>
-              </CardHeader>
-              <CardContent>
-                <Tabs
-                  value={language}
-                  onValueChange={(next) => setLanguage(next as Language)}
-                >
+            <Card
+              className="flex min-w-0 flex-col xl:min-h-0 xl:flex-1"
+              aria-labelledby="code-title"
+            >
+              <h2 id="code-title" className="sr-only">
+                代码与原理
+              </h2>
+              <Tabs
+                defaultValue="code"
+                className="flex flex-col xl:min-h-0 xl:flex-1"
+              >
+                <CardHeader>
                   <TabsList
-                    aria-label="代码语言"
-                    className="grid w-full grid-cols-5"
+                    aria-label="切换代码与原理"
+                    className="grid w-full grid-cols-2"
                   >
+                    <TabsTrigger value="code">代码</TabsTrigger>
+                    <TabsTrigger value="theory">原理</TabsTrigger>
+                  </TabsList>
+                </CardHeader>
+                <TabsContent
+                  value="code"
+                  className="mt-0 flex min-h-0 flex-col px-6 pb-6 pt-0 xl:flex-1"
+                >
+                  <Tabs
+                    value={language}
+                    onValueChange={(next) => setLanguage(next as Language)}
+                    className="flex min-h-0 flex-col xl:flex-1"
+                  >
+                    <div className="flex items-center gap-2">
+                      <TabsList
+                        aria-label="代码语言"
+                        className="grid w-full grid-cols-5"
+                      >
+                        {languages.map((lang) => (
+                          <TabsTrigger
+                            key={lang}
+                            value={lang}
+                            className="px-1 text-xs sm:px-3 sm:text-sm"
+                          >
+                            {lang}
+                          </TabsTrigger>
+                        ))}
+                      </TabsList>
+                      <IconButton
+                        className="shrink-0"
+                        label={copied ? "已复制" : "复制代码"}
+                        onClick={copy}
+                      >
+                        {copied ? <Check /> : <Copy />}
+                      </IconButton>
+                    </div>
                     {languages.map((lang) => (
-                      <TabsTrigger
+                      <TabsContent
                         key={lang}
                         value={lang}
-                        className="px-1 text-xs sm:px-3 sm:text-sm"
+                        className="flex flex-col xl:min-h-0 xl:flex-1"
                       >
-                        {lang}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                  {languages.map((lang) => (
-                    <TabsContent key={lang} value={lang}>
-                      <ScrollArea
-                        className="h-[440px]"
-                        role="region"
-                        aria-label={`${lang} 代码`}
-                        tabIndex={0}
-                      >
-                        <pre className="w-max min-w-full py-4 font-mono text-xs leading-7">
-                          {code.map((line, i) => (
-                            <div
-                              key={i}
-                              className={cn(
-                                "flex border-l-2 border-transparent pr-4",
-                                line.anchor === frame.anchor &&
-                                  "border-primary bg-accent text-accent-foreground",
-                              )}
-                            >
-                              <span
-                                aria-hidden="true"
-                                className="w-10 shrink-0 select-none pr-4 text-right text-muted-foreground"
+                        <ScrollArea
+                          className="h-[440px] xl:min-h-0 xl:flex-1"
+                          role="region"
+                          aria-label={`${lang} 代码`}
+                          tabIndex={0}
+                        >
+                          <pre className="w-max min-w-full py-4 font-mono text-xs leading-7">
+                            {code.map((line, i) => (
+                              <div
+                                key={i}
+                                className={cn(
+                                  "flex border-l-2 border-transparent pr-4",
+                                  line.anchor === frame.anchor &&
+                                    "border-primary bg-accent text-accent-foreground",
+                                )}
                               >
-                                {i + 1}
-                              </span>
-                              <code>{line.text || " "}</code>
-                            </div>
-                          ))}
-                        </pre>
-                        <ScrollBar orientation="horizontal" />
-                      </ScrollArea>
-                    </TabsContent>
-                  ))}
-                </Tabs>
-              </CardContent>
+                                <span
+                                  aria-hidden="true"
+                                  className="w-10 shrink-0 select-none pr-4 text-right text-muted-foreground"
+                                >
+                                  {i + 1}
+                                </span>
+                                <code>{line.text || " "}</code>
+                              </div>
+                            ))}
+                          </pre>
+                          <ScrollBar orientation="horizontal" />
+                        </ScrollArea>
+                      </TabsContent>
+                    ))}
+                  </Tabs>
+                </TabsContent>
+                <TabsContent
+                  value="theory"
+                  className="mt-0 grid content-start gap-6 px-6 pb-6 pt-0 text-sm leading-relaxed md:grid-cols-2 xl:min-h-0 xl:flex-1 xl:grid-cols-1 xl:overflow-y-auto"
+                >
+                  <article className="space-y-2">
+                    <h3 className="font-medium">
+                      {linked ? "链式存储" : "分区与递归"}
+                    </h3>
+                    <p className="text-muted-foreground">
+                      {linked
+                        ? "每个节点包含 value 和 next。head 指向首节点，尾节点的 next 为空；节点无需连续存储。"
+                        : "以末尾元素为基准，将较小元素移到左侧。基准归位后，递归排序两侧，直到区间长度不超过 1。"}
+                    </p>
+                  </article>
+                  <article className="space-y-2">
+                    <h3 className="font-medium">
+                      {linked ? "指针操作" : "分区不变量"}
+                    </h3>
+                    <p className="text-muted-foreground">
+                      {linked
+                        ? "插入时先连接新节点与后继，再更新前驱或 head。删除时让前驱绕过目标节点。索引从 0 开始。"
+                        : "Lomuto 分区中，[low, i) 均小于基准，[i, j) 均不小于基准。扫描结束后交换 a[i] 与基准。"}
+                    </p>
+                  </article>
+                  <article className="space-y-2">
+                    <h3 className="font-medium">复杂度</h3>
+                    <p className="text-muted-foreground">
+                      {linked
+                        ? "查询及按索引增删为 O(n)；已知前驱时，指针修改为 O(1)。额外空间 O(1)。"
+                        : "平均时间 O(n log n)，最坏 O(n²)；平均递归空间 O(log n)，最坏 O(n)。此实现不稳定，有序或重复值较多时可能退化。"}
+                    </p>
+                  </article>
+                </TabsContent>
+              </Tabs>
             </Card>
           </div>
-          <Card aria-labelledby="theory-title">
-            <CardHeader>
-              <CardTitle>
-                <h2 id="theory-title">原理</h2>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-6 text-sm leading-relaxed md:grid-cols-3">
-              <article className="space-y-2">
-                <h3 className="font-medium">
-                  {linked ? "链式存储" : "分区与递归"}
-                </h3>
-                <p className="text-muted-foreground">
-                  {linked
-                    ? "每个节点包含 value 和 next。head 指向首节点，尾节点的 next 为空；节点无需连续存储。"
-                    : "以末尾元素为基准，将较小元素移到左侧。基准归位后，递归排序两侧，直到区间长度不超过 1。"}
-                </p>
-              </article>
-              <article className="space-y-2">
-                <h3 className="font-medium">
-                  {linked ? "指针操作" : "分区不变量"}
-                </h3>
-                <p className="text-muted-foreground">
-                  {linked
-                    ? "插入时先连接新节点与后继，再更新前驱或 head。删除时让前驱绕过目标节点。索引从 0 开始。"
-                    : "Lomuto 分区中，[low, i) 均小于基准，[i, j) 均不小于基准。扫描结束后交换 a[i] 与基准。"}
-                </p>
-              </article>
-              <article className="space-y-2">
-                <h3 className="font-medium">复杂度</h3>
-                <p className="text-muted-foreground">
-                  {linked
-                    ? "查询及按索引增删为 O(n)；已知前驱时，指针修改为 O(1)。额外空间 O(1)。"
-                    : "平均时间 O(n log n)，最坏 O(n²)；平均递归空间 O(log n)，最坏 O(n)。此实现不稳定，有序或重复值较多时可能退化。"}
-                </p>
-              </article>
-            </CardContent>
-          </Card>
         </div>
       </SidebarInset>
     </SidebarProvider>
