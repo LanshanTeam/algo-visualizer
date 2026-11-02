@@ -82,6 +82,19 @@ export function SceneNode({
   );
 }
 
+/** Auxiliary copies are not primary identities; visibility uses the shared clock. */
+export function AuxiliaryNode({ node, progress, times }: ClockProps & {
+  node: NonNullable<AnimationScene["auxiliary"]>["nodes"][number];
+}) {
+  const opacity = useTransform(progress, p => sampleTrack(node.opacity, times, p));
+  return (
+    <motion.g data-auxiliary-node-id={node.id} transform={`translate(${node.x} ${node.y})`} style={{ opacity }}>
+      <rect width={node.width} height={node.height} rx="8" fill="#eff6ff" stroke="#2563eb" />
+      <text x={node.width / 2} y="34" textAnchor="middle" fontFamily="monospace" fontSize={Math.abs(node.value) > 99 ? 19 : 25} fill="#1e293b">{node.value}</text>
+    </motion.g>
+  );
+}
+
 export function SceneEdge({
   link,
   progress,

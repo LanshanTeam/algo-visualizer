@@ -1,4 +1,6 @@
+import type { ReactNode } from "react";
 import { Shuffle } from "lucide-react";
+import { randomValues } from "../../core/random";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -30,6 +32,18 @@ const legendTone: Record<LegendEntry["tone"], string> = {
   settled: "border-green-300 bg-green-50 text-green-700",
   idle: "",
 };
+
+function ArrayStage({ linked, children }: { linked: boolean; children: ReactNode }) {
+  // Leave the linked-list DOM and its spacing unchanged.
+  if (linked) return <>{children}</>;
+  return (
+    <div data-array-stage className="flex min-h-[300px] min-w-0 flex-1 items-center justify-center py-3">
+      <div data-array-composition className="flex w-full min-w-0 flex-col items-center gap-2">
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: TopicTrace }) {
   const controls = topic.controls;
@@ -70,8 +84,9 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
           <h2 id="animation-title">动画</h2>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3 xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
-        <div className="space-y-2">
+      <CardContent className={linked ? "space-y-3 xl:min-h-0 xl:flex-1 xl:overflow-y-auto" : "flex min-h-0 flex-1 flex-col gap-3 xl:overflow-y-auto"}>
+        <div data-array-controls={!linked || undefined} className={!linked ? "grid grid-cols-[minmax(0,1fr)_6rem] gap-3" : undefined}>
+        <div className="min-w-0 space-y-2">
           <Label htmlFor="values">{controls.dataLabel}</Label>
           <div className="flex gap-2">
             <Input
@@ -88,10 +103,7 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
             <IconButton
               label="随机数据"
               onClick={() => {
-                const next = Array.from(
-                  { length: 7 },
-                  () => Math.floor(Math.random() * 90) + 10,
-                );
+                const next = randomValues(controls);
                 setInput(next.join(", "));
                 load(next);
               }}
@@ -100,7 +112,19 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
             </IconButton>
           </div>
         </div>
-        {fieldCount > 0 && (
+        {!linked && (showValue && controls.value ? (
+          <div className="space-y-2">
+            <Label htmlFor="node-value">{controls.value.label}</Label>
+            <Input id="node-value" type="number" min={-999} max={999} value={value}
+              onChange={(event) => {
+                const next = Number(event.target.value);
+                setValue(next);
+                load(values, operation, index, next);
+              }} />
+          </div>
+        ) : <div aria-hidden="true" />)}
+        </div>
+        {linked && fieldCount > 0 && (
           <div className={`grid gap-3 ${COLUMNS[fieldCount]}`}>
             {controls.operations && (
               <div className="space-y-2">
@@ -169,6 +193,7 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
           </Alert>
         )}
         <Separator className="-mx-6 w-auto" />
+        <ArrayStage linked={linked}>
         <AnimationCanvas
           key={traceVersion}
           frame={frame}
@@ -193,7 +218,7 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
           </div>
         )}
         {frame.stack.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 text-xs">
+          <div className={linked ? "flex flex-wrap items-center gap-2 text-xs" : "flex flex-wrap items-center justify-center gap-2 text-xs"}>
             <span className="text-muted-foreground">调用栈</span>
             {frame.stack.map((entry, i) => (
               <Badge variant="secondary" className="font-mono" key={i}>
@@ -202,6 +227,7 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
             ))}
           </div>
         )}
+        </ArrayStage>
       </CardContent>
       <PlaybackBar
         trace={trace}

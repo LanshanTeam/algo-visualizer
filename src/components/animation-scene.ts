@@ -25,6 +25,7 @@ export function createAnimationScene({
 }) {
   const linked = kind === "linked-list";
   const {
+    height,
     nodeHeight,
     nodeWidth,
     stride,
@@ -34,9 +35,11 @@ export function createAnimationScene({
     position,
     track,
   } = createSceneLayout({ frame, previous, linked, capacity });
-  const low = Number(frame.variables.low),
-    high = Number(frame.variables.high);
-  const nodes = frame.items.map((item, index) => {
+  const slots = !linked ? frame.arraySlots ?? frame.items : frame.items;
+  const low = frame.range?.low ?? Number(frame.variables.low),
+    high = frame.range?.high ?? Number(frame.variables.high);
+  const nodes = frame.items.map((item, itemIndex) => {
+    const index = linked ? itemIndex : slots.findIndex(slot => slot?.id === item.id);
     const tone: Tone =
       !linked && index === frame.pointers.pivot
         ? "pivot"
@@ -62,6 +65,22 @@ export function createAnimationScene({
       fontSize: Math.abs(item.value) > 99 ? 19 : 25,
     };
   });
+  const auxiliary = !linked && frame.auxiliary ? {
+    label: frame.auxiliary.label,
+    labelX: 28, labelY: 196,
+    slots: frame.auxiliary.slots.map((_, index) => ({
+      x: 28 + index * stride, y: 208, width: nodeWidth, height: nodeHeight,
+    })),
+    nodes: frame.auxiliary.slots.flatMap((item, index) => {
+      const old = previous?.auxiliary?.slots[index];
+      const entries = item ? [item] : old ? [old] : [];
+      return entries.map(value => ({
+        ...value, index, x: 28 + index * stride, y: 208,
+        width: nodeWidth, height: nodeHeight,
+        opacity: !previous ? [1,1,1,1] : !item ? [1,1,0,0] : old?.id === item.id ? [1,1,1,1] : [0,0,1,1],
+      }));
+    }),
+  } : undefined;
   const hasMotion =
     !!previous &&
     (nodes.some(
@@ -71,7 +90,8 @@ export function createAnimationScene({
       previous.items.some(
         (old) => !frame.items.some((item) => item.id === old.id),
       ) ||
-      JSON.stringify(previous.links) !== JSON.stringify(frame.links));
+      JSON.stringify(previous.links) !== JSON.stringify(frame.links) ||
+      (!linked && JSON.stringify(previous.auxiliary) !== JSON.stringify(frame.auxiliary)));
   const crossedByMotion = (box: Box) =>
     hasMotion &&
     nodes.some((node) =>
@@ -87,13 +107,13 @@ export function createAnimationScene({
     );
   const groups = new Map<
     number,
-    { id: number; index: number; names: string[] }
+    { id: number | undefined; index: number; names: string[] }
   >();
   for (const [name, index] of Object.entries(frame.pointers)) {
-    const item = frame.items[index];
-    if (!item) continue;
-    const key = linked ? item.id : index;
-    const group = groups.get(key) ?? { id: item.id, index, names: [] };
+    const item = slots[index];
+    if (index < 0 || index >= slots.length || (linked && !item)) continue;
+    const key = linked ? item!.id : index;
+    const group = groups.get(key) ?? { id: item?.id, index, names: [] };
     group.names.push(name);
     groups.set(key, group);
   }
@@ -106,7 +126,7 @@ export function createAnimationScene({
       40,
       Math.ceil(name.length * fontSize * 0.62 + 12),
     );
-    const owner = track(id);
+    const owner = id === undefined ? { x: times.map(() => 28 + index * stride), y: times.map(() => baseline) } : track(id);
     const x = linked
       ? owner.x.map((x) => x + nodeWidth / 2)
       : times.map(() => 28 + index * stride + nodeWidth / 2);
@@ -133,10 +153,10 @@ export function createAnimationScene({
         }),
     };
   });
-  const indices = frame.items
-    .filter((item) => frame.detached !== item.id)
+  const indices = slots
+    .filter((item) => !linked || frame.detached !== item?.id)
     .map((item, index) => {
-      const x = position(frame, item.id).x + nodeWidth / 2,
+      const x = (linked ? position(frame, item!.id).x : 28 + index * stride) + nodeWidth / 2,
         y = baseline + nodeHeight + 16;
       return {
         index,
@@ -183,10 +203,12 @@ export function createAnimationScene({
     : [];
   return {
     width,
-    height: 208,
+    height,
     times,
     linked,
     nodes,
+    auxiliary,
+    heldLabel: !linked && frame.held ? { x: 28, y: 10, text: "暂存 key" } : undefined,
     pointers,
     indices,
     links,
@@ -196,7 +218,8 @@ export function createAnimationScene({
       !linked &&
       frame.items.length > 0 &&
       Number.isFinite(low) &&
-      Number.isFinite(high)
+      Number.isFinite(high) &&
+      low <= high
         ? {
             x: 18 + low * stride,
             y: baseline - 8,
@@ -205,7 +228,7 @@ export function createAnimationScene({
           }
         : undefined,
     slots: !linked
-      ? frame.items.map((_, index) => ({
+      ? slots.map((_, index) => ({
           x: 28 + index * stride,
           y: baseline,
           width: nodeWidth,
