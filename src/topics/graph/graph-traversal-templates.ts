@@ -3,19 +3,21 @@ import type { Language } from "../../core/types";
 export const templates: Record<Language, Record<"bfs" | "dfs", string>> = {
   C: {
     bfs: `void bfs(int start) { // @start
-  queue<int> q; visited[start] = true; q.push(start); // @enqueue
-  while (!q.empty()) { // @dequeue
-    int u = q.front(); q.pop(); // @visit
-    for (int v : graph[u]) { // @scan
-      if (!visited[v]) { visited[v] = true; q.push(v); } // @discover
+  int queue[MAX_VERTICES], front = 0, rear = 0;
+  queue[rear++] = start; visited[start] = 1; // @enqueue
+  while (front < rear) { // @dequeue
+    int u = queue[front++]; // @visit
+    for (int v = 0; v < n; ++v) { // @scan
+      if (graph[u][v] && !visited[v]) { visited[v] = 1; queue[rear++] = v; } // @discover
     }
   }
 } // @done`,
     dfs: `void dfs(int u) { // @start
-  visited[u] = true; // @visit
-  for (int v : graph[u]) { // @scan
+  visited[u] = 1; // @visit
+  for (int v = 0; v < n; ++v) { // @scan
     if (!visited[v]) dfs(v); // @recurse
   }
+  return; // @backtrack
 } // @done`,
   },
   Python: {
@@ -30,6 +32,7 @@ export const templates: Record<Language, Record<"bfs" | "dfs", string>> = {
     visited.add(u) # @visit
     for v in graph[u]: # @scan
         if v not in visited: dfs(v) # @recurse
+    return # @backtrack
 # @done`,
   },
   "C++": {
@@ -47,6 +50,7 @@ export const templates: Record<Language, Record<"bfs" | "dfs", string>> = {
   for (int v : graph[u]) { // @scan
     if (!visited[v]) dfs(v); // @recurse
   }
+  return; // @backtrack
 } // @done`,
   },
   Go: {
@@ -64,6 +68,7 @@ export const templates: Record<Language, Record<"bfs" | "dfs", string>> = {
     for _, v := range graph[u] { // @scan
         if !visited[v] { dfs(v) } // @recurse
     }
+    return // @backtrack
 } // @done`,
   },
   Java: {
@@ -81,6 +86,7 @@ export const templates: Record<Language, Record<"bfs" | "dfs", string>> = {
   for (int v : graph[u]) { // @scan
     if (!visited[v]) dfs(v); // @recurse
   }
+  return; // @backtrack
 } // @done`,
   },
   Rust: {
@@ -98,6 +104,7 @@ export const templates: Record<Language, Record<"bfs" | "dfs", string>> = {
     for &v in &graph[u] { // @scan
         if !visited[v] { dfs(v); } // @recurse
     }
+    return; // @backtrack
 } // @done`,
   },
 };

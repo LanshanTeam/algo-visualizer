@@ -12,9 +12,9 @@ const templates = {
   dist[start] = 0; // @initialize
   for (int step = 0; step < n; step++) {
     int u = selectMinUnvisited(); // @select
-    used[u] = true; // @settle
-    for (Edge e : graph[u]) { // @scan
-      if (dist[u] + e.weight < dist[e.to]) relax(u, e.to, e.weight); // @relax
+    used[u] = 1; // @settle
+    for (int v = 0; v < n; ++v) { // @scan
+      if (graph[u][v] >= 0 && dist[u] + graph[u][v] < dist[v]) relax(u, v, graph[u][v]); // @relax
     }
   }
 } // @done`,

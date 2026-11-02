@@ -208,6 +208,16 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
             onAnimatingChange={setAnimating}
           />
         )}
+        {graph && frame.queue && (
+          <div className="flex flex-wrap items-center gap-2 text-xs" aria-label="BFS 队列">
+            <span className="text-muted-foreground">队列</span>
+            {frame.queue.length === 0 ? (
+              <Badge variant="secondary" className="font-mono">空</Badge>
+            ) : frame.queue.map((id) => (
+              <Badge variant="secondary" className="font-mono" key={id}>{String.fromCharCode(65 + id)}</Badge>
+            ))}
+          </div>
+        )}
         {topic.legend && (
           <div className="flex flex-wrap justify-center gap-2" aria-label="图例">
             {topic.legend.map((entry) => (

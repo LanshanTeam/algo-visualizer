@@ -21,16 +21,19 @@ function graphTrace(start: number, operation: "bfs" | "dfs"): Frame[] {
   const visitOrder: number[] = [];
   const stack: string[] = [];
   let currentEdge: string | undefined;
+  let queueSnapshot: number[] | undefined;
   function emit(anchor: string, narration: string, active: number[] = [], pointers: Record<string, number> = {}) {
-    frames.push({ items: items.map((item) => ({ ...item })), links: GRAPH_EDGES.map((edge) => [...edge] as [number, number]), active, settled: [...settled], pointers, anchor, narration, variables: { operation, start, ...(currentEdge ? { edge: currentEdge } : {}) }, stack: [...stack] });
+    frames.push({ items: items.map((item) => ({ ...item })), links: GRAPH_EDGES.map((edge) => [...edge] as [number, number]), active, settled: [...settled], pointers, anchor, narration, variables: { operation, start, ...(currentEdge ? { edge: currentEdge } : {}) }, stack: [...stack], queue: queueSnapshot ? [...queueSnapshot] : undefined });
   }
   emit("start", `从顶点 ${labels[start]} 开始${operation === "bfs" ? "广度" : "深度"}优先遍历。`, [start], { current: start });
   visited.add(start);
   if (operation === "bfs") {
     const queue = [start];
+    queueSnapshot = queue;
     emit("enqueue", `将 ${labels[start]} 放入队列。`, [start], { current: start });
     while (queue.length) {
       const u = queue.shift()!;
+      queueSnapshot = queue;
       visitOrder.push(u);
       settled.push(u);
       emit("dequeue", `取出队首 ${labels[u]}，检查它的邻接顶点。`, [u], { current: u });
@@ -39,6 +42,7 @@ function graphTrace(start: number, operation: "bfs" | "dfs"): Frame[] {
         emit("scan", `检查边 ${labels[u]} - ${labels[v]}。`, [u, v], { current: u, neighbor: v });
         if (!visited.has(v)) {
           visited.add(v); queue.push(v);
+          queueSnapshot = queue;
           emit("discover", `发现 ${labels[v]}，加入队列。`, [v], { current: u, neighbor: v });
         }
       }
