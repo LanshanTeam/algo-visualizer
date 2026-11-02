@@ -8,16 +8,25 @@ const DEFAULT_VALUE = 31;
 
 export function useTopicTrace(topic: ReadyTopic) {
   const controls = topic.controls;
-  const initialOperation = controls.operations?.[0]?.id ?? "";
+  const initialText = controls.defaultInput ?? controls.defaultValues.join(", ");
+  const initialOperation =
+    controls.operations?.find((entry) => entry.id === controls.defaultOperation)
+      ?.id ??
+    controls.operations?.[0]?.id ??
+    "";
   const [language, setLanguage] = useState<Language>("C");
-  const [values, setValues] = useState(controls.defaultValues);
-  const [input, setInput] = useState(() => controls.defaultValues.join(", "));
+  const [values, setValues] = useState(() =>
+    controls.parseInput
+      ? controls.parseInput(initialText, controls.limit)
+      : controls.defaultValues,
+  );
+  const [input, setInput] = useState(initialText);
   const [operation, setOperation] = useState(initialOperation);
   const [index, setIndex] = useState(DEFAULT_INDEX);
   const [value, setValue] = useState(DEFAULT_VALUE);
   const [frames, setFrames] = useState(() =>
     topic.trace({
-      values: controls.defaultValues,
+      values,
       operation: initialOperation,
       index: DEFAULT_INDEX,
       value: DEFAULT_VALUE,
@@ -145,7 +154,7 @@ export function useTopicTrace(topic: ReadyTopic) {
   }, [copied]);
   function apply() {
     try {
-      load(parseValues(input, controls.limit));
+      load((controls.parseInput ?? parseValues)(input, controls.limit));
     } catch (cause) {
       setError((cause as Error).message);
     }

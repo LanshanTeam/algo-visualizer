@@ -85,19 +85,21 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
             <Button variant="outline" onClick={apply}>
               应用
             </Button>
-            <IconButton
-              label="随机数据"
-              onClick={() => {
-                const next = Array.from(
-                  { length: 7 },
-                  () => Math.floor(Math.random() * 90) + 10,
-                );
-                setInput(next.join(", "));
-                load(next);
-              }}
-            >
-              <Shuffle />
-            </IconButton>
+            {controls.randomizable !== false && (
+              <IconButton
+                label="随机数据"
+                onClick={() => {
+                  const next = Array.from(
+                    { length: 7 },
+                    () => Math.floor(Math.random() * 90) + 10,
+                  );
+                  setInput(next.join(", "));
+                  load(next);
+                }}
+              >
+                <Shuffle />
+              </IconButton>
+            )}
           </div>
         </div>
         {fieldCount > 0 && (

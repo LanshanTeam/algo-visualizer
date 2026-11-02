@@ -35,8 +35,16 @@ export interface ControlSchema {
   /** 数据输入框的标签，例如「初始链表」「数组」。 */
   dataLabel: string;
   defaultValues: number[];
+  /** 数据输入框的初始文本；缺省用 defaultValues 拼接。 */
+  defaultInput?: string;
+  /** 自定义解析；空位可用 NaN 等哨兵表示，共享 parseValues 不受影响。 */
+  parseInput?: (text: string, limit?: number) => number[];
   /** 数据规模上限，默认 12。 */
   limit?: number;
+  /** 初始选中的操作；缺省为 operations 的第一项。 */
+  defaultOperation?: string;
+  /** 是否显示随机数据按钮，默认显示。 */
+  randomizable?: boolean;
   operations?: readonly { id: string; label: string }[];
   index?: IndexControl;
   value?: { label: string; onlyFor?: readonly string[] };
