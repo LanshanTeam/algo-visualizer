@@ -1,6 +1,7 @@
-import { Binary, GitFork, Hash, Workflow } from "lucide-react";
+import { GitFork, Hash, Workflow } from "lucide-react";
 import { plannedTopic, type TopicDefinition } from "../types";
 import { binaryTree } from "./binary-tree";
+import { bst } from "./bst";
 
 /**
  * 树与散列专题：哈希表、二叉树、BST、堆、并查集。
@@ -16,15 +17,7 @@ export const treeHashTopics: TopicDefinition[] = [
     icon: Hash,
   }),
   binaryTree,
-  plannedTopic({
-    id: "bst",
-    group: "tree-hash",
-    title: "二叉搜索树",
-    badge: "O(log n)",
-    summary: "左小右大的有序结构，支持查找、插入与三种删除情形。",
-    icon: Binary,
-    scene: "tree",
-  }),
+  bst,
   plannedTopic({
     id: "heap",
     group: "tree-hash",
