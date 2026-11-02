@@ -40,14 +40,13 @@ export function connectionPathAt(
   times: number[],
   progress: number,
 ) {
-  // 树边从父节点底边中点到子节点顶边中点，单段三次贝塞尔。
+  // 树边从父节点底边中点直连子节点顶边中点。
   if (link.geometry === "tree") {
     const ax = sampleTrack(link.from.x, times, progress) + link.sourceWidth / 2;
     const ay = sampleTrack(link.from.y, times, progress) + link.sourceHeight;
     const bx = sampleTrack(link.to.x, times, progress) + link.targetWidth / 2;
     const by = sampleTrack(link.to.y, times, progress);
-    const bend = (by - ay) / 2;
-    return `M ${ax} ${ay} C ${ax} ${ay + bend}, ${bx} ${by - bend}, ${bx} ${by}`;
+    return `M ${ax} ${ay} L ${bx} ${by}`;
   }
   const ax = sampleTrack(link.from.x, times, progress) + link.sourceWidth;
   const ay = sampleTrack(link.from.y, times, progress) + link.portY;

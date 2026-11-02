@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Frame } from "../core/types";
 import { binaryTreeTrace, parseTreeInput } from "../topics/tree-hash/binary-tree";
-import { createAnimationScene } from "./animation-scene";
+import { connectionPathAt, createAnimationScene } from "./animation-scene";
 import { verifyScene, verifyTrace } from "./animation-scene.test-helpers";
 import { readTree, treeDepthOf } from "./tree-layout";
 
@@ -35,6 +35,16 @@ describe("树场景几何", () => {
       ),
     );
     expect(widths.size).toBe(1);
+  });
+
+  it("父子连线是直线", () => {
+    const frames = binaryTreeTrace(values, "preorder");
+    const scene = sceneOf(frames[0]);
+    for (const link of scene.links) {
+      expect(
+        connectionPathAt(link, scene.times, 1),
+      ).toMatch(/^M -?[\d.]+ -?[\d.]+ L -?[\d.]+ -?[\d.]+$/);
+    }
   });
 
   it("单节点、只有右孩子与 15 节点斜树", () => {

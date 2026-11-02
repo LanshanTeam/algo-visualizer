@@ -109,18 +109,11 @@ export function verifyScene(
           throw new Error("树边端点没有连接父子节点的边界中点");
         if (checkCollisions)
           for (let step = 1; step < 20; step++) {
-            const u = step / 20,
-              v = 1 - u;
+            const u = step / 20;
             const x =
-              v * v * v * numbers[0] +
-              3 * v * v * u * numbers[2] +
-              3 * v * u * u * numbers[4] +
-              u * u * u * numbers[6];
+              numbers[0] + (numbers[2] - numbers[0]) * u;
             const y =
-              v * v * v * numbers[1] +
-              3 * v * v * u * numbers[3] +
-              3 * v * u * u * numbers[5] +
-              u * u * u * numbers[7];
+              numbers[1] + (numbers[3] - numbers[1]) * u;
             for (const other of nodes)
               if (
                 other.id !== from &&
