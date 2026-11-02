@@ -47,7 +47,12 @@ export interface ControlSchema {
   randomizable?: boolean;
   operations?: readonly { id: string; label: string }[];
   index?: IndexControl;
-  value?: { label: string; onlyFor?: readonly string[] };
+  value?: {
+    label: string;
+    onlyFor?: readonly string[];
+    /** 目标值输入框与首帧 trace 的初始值；缺省为 31。 */
+    defaultValue?: number;
+  };
 }
 
 export interface TheoryBlock {

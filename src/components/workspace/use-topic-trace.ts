@@ -14,6 +14,7 @@ export function useTopicTrace(topic: ReadyTopic) {
       ?.id ??
     controls.operations?.[0]?.id ??
     "";
+  const initialValue = controls.value?.defaultValue ?? DEFAULT_VALUE;
   const [language, setLanguage] = useState<Language>("C");
   const [values, setValues] = useState(() =>
     controls.parseInput
@@ -23,13 +24,13 @@ export function useTopicTrace(topic: ReadyTopic) {
   const [input, setInput] = useState(initialText);
   const [operation, setOperation] = useState(initialOperation);
   const [index, setIndex] = useState(DEFAULT_INDEX);
-  const [value, setValue] = useState(DEFAULT_VALUE);
+  const [value, setValue] = useState(initialValue);
   const [frames, setFrames] = useState(() =>
     topic.trace({
       values,
       operation: initialOperation,
       index: DEFAULT_INDEX,
-      value: DEFAULT_VALUE,
+      value: initialValue,
     }),
   );
   const [step, setStep] = useState(0);
