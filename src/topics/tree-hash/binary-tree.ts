@@ -197,7 +197,7 @@ export function binaryTreeTrace(values: number[], operation: string): Frame[] {
         pointers: {},
         anchor: "visit",
         narration: `出队 ${node.value}，访问；${
-          children.length ? `${children.join("、")}入队` : "没有孩子入队"
+          children.length ? `${children.join("、")} 入队` : "没有孩子入队"
         }。${done ? "层序遍历完成。" : ""}`,
         variables: { visited: visited.length, total },
         stack: [],
