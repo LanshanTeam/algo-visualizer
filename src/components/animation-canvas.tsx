@@ -93,12 +93,12 @@ export function AnimationCanvas({
         width={scene.width}
         height={scene.height}
         preserveAspectRatio={linked ? "xMinYMin meet" : "xMidYMid meet"}
-        className={linked ? "block h-auto w-full min-w-[430px] sm:min-w-0" : "mx-auto block h-auto min-w-[516px] sm:min-w-0"}
-        // Scale the previous responsive display, not the logical motion lanes.
-        // Overflow stays inside ScrollArea; nodes, text and auxiliary rows scale together.
+        className={linked ? "block h-auto w-full min-w-[430px] sm:min-w-0" : "mx-auto block h-auto min-w-0"}
+        // Ordinary arrays fit the viewport, including their boundary pointers.
+        // Only long inputs retain an enlarged minimum width and internal scrolling.
         style={linked
           ? { minWidth: capacity > 8 ? scene.width : undefined }
-          : { width: "120%", minWidth: capacity > 8 ? scene.width * 1.2 : undefined, maxWidth: scene.width * 1.2 }}
+          : { width: "100%", minWidth: capacity > 8 ? scene.width * 1.2 : undefined, maxWidth: scene.width * 1.2 }}
         role="img"
         aria-label={
           linked ? "链表节点及 next 指针" : "数组分区、比较与交换动画"

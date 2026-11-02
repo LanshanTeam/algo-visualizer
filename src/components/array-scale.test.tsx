@@ -4,8 +4,8 @@ import { AnimationCanvas } from "./animation-canvas";
 import { sortingSearchingTopics } from "../topics/sorting-searching";
 import { createAnimationScene } from "./animation-scene";
 
-describe("additional 20% array display scale", () => {
-  it("scales the previous responsive width, including its mobile floor and long-input width, without changing logical geometry", () => {
+describe("responsive array display bounds", () => {
+  it("fits ordinary arrays without a mobile width floor and keeps long inputs scrollable without changing logical geometry", () => {
     for (const topic of sortingSearchingTopics) {
       if (topic.status !== "ready") continue;
       for (const count of [6, 12]) {
@@ -14,11 +14,13 @@ describe("additional 20% array display scale", () => {
         const html = renderToStaticMarkup(<AnimationCanvas frame={frame} linked={false} capacity={count} duration={1} />);
         const svg = html.match(/<svg data-animation-stage[^>]*>/)![0];
         expect(html).toContain('[&amp;_[data-radix-scroll-area-viewport]&gt;div]:!block');
-        expect(svg).toContain('width:120%');
+        expect(svg).toContain('width:100%');
         expect(svg).toContain(`max-width:${scene.width * 1.2}px`);
-        expect(svg).toContain('min-w-[516px]');
+        expect(svg).toContain('min-w-0');
+        expect(svg).not.toContain('min-w-[516px]');
         expect(svg).toContain(`viewBox="0 0 ${scene.width} ${scene.height}"`);
         if (count > 8) expect(svg).toContain(`min-width:${scene.width * 1.2}px`);
+        else expect(svg).not.toContain('min-width:');
       }
     }
   });
