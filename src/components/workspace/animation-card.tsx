@@ -14,6 +14,7 @@ import {
 } from "../ui/select";
 import { Separator } from "../ui/separator";
 import { AnimationCanvas } from "../animation-canvas";
+import { GraphTreeCanvas } from "../graph-tree-canvas";
 import { IconButton } from "./icon-button";
 import { PlaybackBar } from "./playback-bar";
 import type { TopicTrace } from "./use-topic-trace";
@@ -34,6 +35,7 @@ const legendTone: Record<LegendEntry["tone"], string> = {
 export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: TopicTrace }) {
   const controls = topic.controls;
   const linked = topic.scene === "linked-list";
+  const graph = topic.scene === "graph";
   const {
     input,
     setInput,
@@ -88,10 +90,9 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
             <IconButton
               label="随机数据"
               onClick={() => {
-                const next = Array.from(
-                  { length: 7 },
-                  () => Math.floor(Math.random() * 90) + 10,
-                );
+                const next = graph
+                  ? [Math.floor(Math.random() * 6)]
+                  : Array.from({ length: 7 }, () => Math.floor(Math.random() * 90) + 10);
                 setInput(next.join(", "));
                 load(next);
               }}
@@ -169,16 +170,44 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
           </Alert>
         )}
         <Separator className="-mx-6 w-auto" />
-        <AnimationCanvas
-          key={traceVersion}
-          frame={frame}
-          previous={previousStep === null ? undefined : frames[previousStep]}
-          linked={linked}
-          capacity={capacity}
-          duration={1 / speed}
-          paused={!playing && stepMode === "automatic"}
-          onAnimatingChange={setAnimating}
-        />
+        {graph ? (
+          <GraphTreeCanvas
+            nodes={frame.items.map((item, index) => {
+              const positions = [
+                [120, 100], [360, 48], [360, 196], [620, 38], [690, 210], [785, 122],
+              ];
+              const tone = frame.settled.includes(index)
+                ? "settled"
+                : frame.active.includes(index)
+                  ? "active"
+                  : "idle";
+              const distance = typeof frame.variables.distances === "string"
+                ? frame.variables.distances.split(",")[index]
+                : undefined;
+              return { id: item.id, label: String.fromCharCode(65 + item.value), x: positions[index][0], y: positions[index][1], tone, detail: distance ? `d=${distance}` : undefined };
+            })}
+            edges={(frame.links ?? []).map(([from, to]) => ({
+              from,
+              to,
+              weight: frame.edgeWeights?.[`${from}-${to}`],
+              tone: frame.variables.edge === `${from}-${to}` || frame.variables.edge === `${to}-${from}` ? "active" : "idle",
+            }))}
+            width={920}
+            height={280}
+            ariaLabel="图的节点、边与遍历状态"
+          />
+        ) : (
+          <AnimationCanvas
+            key={traceVersion}
+            frame={frame}
+            previous={previousStep === null ? undefined : frames[previousStep]}
+            linked={linked}
+            capacity={capacity}
+            duration={1 / speed}
+            paused={!playing && stepMode === "automatic"}
+            onAnimatingChange={setAnimating}
+          />
+        )}
         {topic.legend && (
           <div className="flex flex-wrap justify-center gap-2" aria-label="图例">
             {topic.legend.map((entry) => (
