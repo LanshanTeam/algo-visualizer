@@ -5,7 +5,9 @@ import {
   createAnimationScene,
   sampleTrack,
 } from "./animation-scene";
+import { treeDepthOf } from "./tree-layout";
 
+export type SceneKind = "array" | "linked-list" | "tree";
 export type Box = { x: number; y: number; width: number; height: number };
 export function overlaps(a: Box, b: Box) {
   return (
@@ -18,10 +20,18 @@ export function overlaps(a: Box, b: Box) {
 export function verifyScene(
   frame: Frame,
   previous: Frame | undefined,
-  kind: "array" | "linked-list",
+  kind: SceneKind,
   capacity: number,
+  treeDepth = 0,
 ) {
-  const scene = createAnimationScene({ frame, previous, kind, capacity });
+  const scene = createAnimationScene({
+    frame,
+    previous,
+    kind,
+    capacity,
+    treeDepth,
+  });
+  const tree = kind === "tree";
   expect(scene.height).toBeLessThanOrEqual(220);
   for (const pointer of scene.pointers)
     for (const name of pointer.name.split(",")) {
@@ -30,6 +40,8 @@ export function verifyScene(
     }
   for (let tick = 0; tick <= 100; tick++) {
     const t = tick / 100;
+    // 树的创建动画会让已有节点滑动，中间时刻允许短暂交叠，只检查静态帧与终点。
+    const checkCollisions = !tree || !previous || t === 1;
     const nodes = scene.nodes.map((node) => ({
       ...node,
       x: sampleTrack(node.x, scene.times, t),
@@ -66,11 +78,12 @@ export function verifyScene(
         node.y + node.height > scene.height
       )
         throw new Error(`节点 ${node.id} 越界`);
-      for (let b = a + 1; b < nodes.length; b++)
-        if (overlaps(node, nodes[b]))
-          throw new Error(
-            `${frame.anchor} 节点 ${node.id} / ${nodes[b].id} 在 ${t} 相交`,
-          );
+      if (checkCollisions)
+        for (let b = a + 1; b < nodes.length; b++)
+          if (overlaps(node, nodes[b]))
+            throw new Error(
+              `${frame.anchor} 节点 ${node.id} / ${nodes[b].id} 在 ${t} 相交`,
+            );
       for (const label of visibleLabels)
         if (overlaps(node, label))
           throw new Error(`${frame.anchor} 节点 ${node.id} 在 ${t} 压住标注`);
@@ -84,6 +97,43 @@ export function verifyScene(
         .match(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi)!
         .map(Number);
       const [ex, ey] = numbers.slice(-2);
+      if (tree) {
+        if (link.arrow || link.geometry !== "tree")
+          throw new Error("树边应为无箭头的父子连线");
+        if (
+          Math.abs(numbers[0] - (a.x + a.width / 2)) > 1e-6 ||
+          Math.abs(numbers[1] - (a.y + a.height)) > 1e-6 ||
+          Math.abs(ex - (b.x + b.width / 2)) > 1e-6 ||
+          Math.abs(ey - b.y) > 1e-6
+        )
+          throw new Error("树边端点没有连接父子节点的边界中点");
+        if (checkCollisions)
+          for (let step = 1; step < 20; step++) {
+            const u = step / 20,
+              v = 1 - u;
+            const x =
+              v * v * v * numbers[0] +
+              3 * v * v * u * numbers[2] +
+              3 * v * u * u * numbers[4] +
+              u * u * u * numbers[6];
+            const y =
+              v * v * v * numbers[1] +
+              3 * v * v * u * numbers[3] +
+              3 * v * u * u * numbers[5] +
+              u * u * u * numbers[7];
+            for (const other of nodes)
+              if (
+                other.id !== from &&
+                other.id !== to &&
+                x > other.x &&
+                x < other.x + other.width &&
+                y > other.y &&
+                y < other.y + other.height
+              )
+                throw new Error("树边穿过非端点节点");
+          }
+        continue;
+      }
       const onLeft =
         Math.abs(ex - (b.x - 6)) < 0.001 &&
         ey >= b.y - 6 - 0.001 &&
@@ -144,15 +194,28 @@ export function verifyScene(
   }
   return scene;
 }
-export function verifyTrace(frames: Frame[], kind: "array" | "linked-list") {
+export function verifyTrace(frames: Frame[], kind: SceneKind) {
   const capacity = Math.max(...frames.map((frame) => frame.items.length));
-  const first = createAnimationScene({ frame: frames[0], kind, capacity });
+  const treeDepth =
+    kind === "tree" ? Math.max(...frames.map(treeDepthOf)) : 0;
+  const first = createAnimationScene({
+    frame: frames[0],
+    kind,
+    capacity,
+    treeDepth,
+  });
   for (let i = 0; i < frames.length; i++) {
-    const scene = verifyScene(frames[i], undefined, kind, capacity);
+    const scene = verifyScene(
+      frames[i],
+      undefined,
+      kind,
+      capacity,
+      treeDepth,
+    );
     expect([scene.width, scene.height]).toEqual([first.width, first.height]);
     if (i > 0) {
-      verifyScene(frames[i], frames[i - 1], kind, capacity);
-      verifyScene(frames[i - 1], frames[i], kind, capacity);
+      verifyScene(frames[i], frames[i - 1], kind, capacity, treeDepth);
+      verifyScene(frames[i - 1], frames[i], kind, capacity, treeDepth);
     }
   }
 }
