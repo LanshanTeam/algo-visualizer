@@ -158,6 +158,9 @@ export function createAnimationScene({
         : undefined;
   const links: SceneLink[] = (frame.links ?? []).map(([from, to]) => ({
     id: `${from}-${to}`,
+    geometry: "next",
+    sourceHeight: 0,
+    arrow: true,
     highlighted: from === changedFrom,
     obstacles: frame.items
       .filter((item) => item.id !== from && item.id !== to)

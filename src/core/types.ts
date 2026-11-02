@@ -9,12 +9,18 @@ export type Language = "C" | "C++" | "Python" | "Go" | "Java" | "Rust";
 export type SceneKind = "array" | "linked-list" | "graph" | "tree";
 
 /** 渲染器当前真正实现的布局。 */
-export type ImplementedSceneKind = "array" | "linked-list";
+export type ImplementedSceneKind = "array" | "linked-list" | "tree";
 
 export interface Item {
   id: number;
   value: number;
 }
+
+/** 树连线指向的是父节点的左孩子还是右孩子。 */
+export type FrameLinkSide = "left" | "right";
+
+/** 有向连线；树布局用第三项区分左右孩子，其他布局可省略。 */
+export type FrameLink = [from: number, to: number, side?: FrameLinkSide];
 
 /** 一个可回放的演示快照。 */
 export interface Frame {
@@ -31,10 +37,19 @@ export interface Frame {
   variables: Record<string, number | string>;
   /** 递归 / 调用栈，非空时工作台会展示。 */
   stack: string[];
-  /** 有向连线，元素为 `[fromId, toId]`。 */
-  links?: Array<[number, number]>;
+  /**
+   * 有向连线，元素为 `[fromId, toId]`。
+   * 树布局用可选的第三项标记左/右孩子；缺省时按同一父节点的连线顺序回退。
+   */
+  links?: FrameLink[];
   detached?: number;
   headId?: number | null;
+  /**
+   * 二叉树根节点身份。
+   * 省略时按 `links` 推断（没有被任何连线指向的首个节点）；
+   * `null` 表示未声明根，非空 `items` 会按森林布局展示。
+   */
+  rootId?: number | null;
 }
 
 export interface CodeLine {

@@ -1,14 +1,22 @@
 export type Track = { x: number[]; y: number[] };
 export type Box = { x: number; y: number; width: number; height: number };
 export type Tone = "idle" | "active" | "pivot" | "settled";
+/** 连线走向：next 为链表，tree 为二叉树的父子边。 */
+export type LinkGeometry = "next" | "tree";
 export type SceneLink = {
   id: string;
+  geometry: LinkGeometry;
   from: Track;
   to: Track;
   sourceWidth: number;
+  /** tree 使用父节点高度；next 不使用。 */
+  sourceHeight: number;
   targetWidth: number;
   targetHeight: number;
+  /** next 使用右边缘中点；tree 不使用。 */
   portY: number;
+  /** 树形父子关系不画箭头，避免视觉噪声。 */
+  arrow: boolean;
   existed: boolean;
   highlighted: boolean;
   obstacles: Track[];
@@ -32,6 +40,15 @@ export function connectionPathAt(
   times: number[],
   progress: number,
 ) {
+  // 树边从父节点底边中点到子节点顶边中点，单段三次贝塞尔。
+  if (link.geometry === "tree") {
+    const ax = sampleTrack(link.from.x, times, progress) + link.sourceWidth / 2;
+    const ay = sampleTrack(link.from.y, times, progress) + link.sourceHeight;
+    const bx = sampleTrack(link.to.x, times, progress) + link.targetWidth / 2;
+    const by = sampleTrack(link.to.y, times, progress);
+    const bend = (by - ay) / 2;
+    return `M ${ax} ${ay} C ${ax} ${ay + bend}, ${bx} ${by - bend}, ${bx} ${by}`;
+  }
   const ax = sampleTrack(link.from.x, times, progress) + link.sourceWidth;
   const ay = sampleTrack(link.from.y, times, progress) + link.portY;
   const bx = sampleTrack(link.to.x, times, progress);
