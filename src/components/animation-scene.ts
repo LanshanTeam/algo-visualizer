@@ -1,4 +1,4 @@
-import type { Frame } from "../core/types";
+import type { Frame, ImplementedSceneKind } from "../core/types";
 import {
   overlaps,
   type Box,
@@ -6,6 +6,7 @@ import {
   type Tone,
 } from "./scene-geometry";
 import { createSceneLayout } from "./scene-layout";
+import { createTreeLayout } from "./tree-layout";
 
 export { connectionPathAt, sampleTrack } from "./scene-geometry";
 export type { SceneLink } from "./scene-geometry";
@@ -17,12 +18,16 @@ export function createAnimationScene({
   previous,
   kind,
   capacity,
+  treeDepth = 0,
 }: {
   frame: Frame;
   previous?: Frame;
-  kind: "array" | "linked-list";
+  kind: ImplementedSceneKind;
   capacity: number;
+  treeDepth?: number;
 }) {
+  if (kind === "tree")
+    return createTreeScene({ frame, previous, capacity, treeDepth });
   const linked = kind === "linked-list";
   const {
     nodeHeight,
@@ -226,6 +231,103 @@ export function createAnimationScene({
       linked && frame.headId === null && frame.items.length > 0
         ? { x: 28, y: baseline + 32 }
         : undefined,
+  };
+}
+function createTreeScene({
+  frame,
+  previous,
+  capacity,
+  treeDepth,
+}: {
+  frame: Frame;
+  previous?: Frame;
+  capacity: number;
+  treeDepth: number;
+}) {
+  const { diameter, width, times, track } = createTreeLayout({
+    frame,
+    previous,
+    capacity,
+    treeDepth,
+  });
+  const indexOf = (id: number) =>
+    frame.items.findIndex((item) => item.id === id);
+  const nodes = frame.items.map((item, index) => {
+    // 树把“已访问”映射成蓝色 active、当前节点映射成琥珀 pivot。
+    const tone: Tone = frame.active.includes(index)
+      ? "pivot"
+      : frame.settled.includes(index)
+        ? "active"
+        : "idle";
+    const base = Math.min(20, Math.max(7, diameter * 0.45));
+    const fontSize = Math.abs(item.value) > 99 ? base * 0.75 : base;
+    return {
+      ...item,
+      ...track(item.id),
+      width: diameter,
+      height: diameter,
+      tone,
+      muted: false,
+      entering: !!previous && !previous.items.some((old) => old.id === item.id),
+      valueX: diameter / 2,
+      valueY: diameter / 2 + fontSize * 0.35,
+      fontSize,
+    };
+  });
+  const hasMotion =
+    !!previous &&
+    (nodes.some(
+      (node) =>
+        node.entering || new Set(node.x).size > 1 || new Set(node.y).size > 1,
+    ) ||
+      previous.items.some(
+        (old) => !frame.items.some((item) => item.id === old.id),
+      ) ||
+      JSON.stringify(previous.links) !== JSON.stringify(frame.links));
+  const links: SceneLink[] = (frame.links ?? [])
+    .filter(
+      ([from, to]) => indexOf(from) >= 0 && indexOf(to) >= 0,
+    )
+    .map(([from, to]) => {
+      const child = indexOf(to);
+      return {
+        id: `${from}-${to}`,
+        geometry: "tree",
+        sourceHeight: diameter,
+        arrow: false,
+        highlighted:
+          child >= 0 &&
+          (frame.active.includes(child) || frame.settled.includes(child)),
+        obstacles: [],
+        from: track(from),
+        to: track(to),
+        sourceWidth: diameter,
+        targetWidth: diameter,
+        targetHeight: diameter,
+        portY: 0,
+        existed:
+          previous?.links?.some(
+            (link) => link[0] === from && link[1] === to,
+          ) ?? true,
+      };
+    });
+  return {
+    width,
+    height: 208,
+    times,
+    linked: false,
+    nodes,
+    pointers: [],
+    indices: [],
+    links,
+    tails: [],
+    hasMotion,
+    range: undefined,
+    slots: [],
+    empty: !frame.items.length
+      ? { text: "空树", x: width / 2, y: 108 }
+      : undefined,
+    nullHead: undefined,
   };
 }
 export type AnimationScene = ReturnType<typeof createAnimationScene>;

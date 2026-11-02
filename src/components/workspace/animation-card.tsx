@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Shuffle } from "lucide-react";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
@@ -14,6 +15,7 @@ import {
 } from "../ui/select";
 import { Separator } from "../ui/separator";
 import { AnimationCanvas } from "../animation-canvas";
+import { treeDepthOf } from "../tree-layout";
 import { IconButton } from "./icon-button";
 import { PlaybackBar } from "./playback-bar";
 import type { TopicTrace } from "./use-topic-trace";
@@ -33,7 +35,6 @@ const legendTone: Record<LegendEntry["tone"], string> = {
 
 export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: TopicTrace }) {
   const controls = topic.controls;
-  const linked = topic.scene === "linked-list";
   const {
     input,
     setInput,
@@ -59,6 +60,13 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
     load,
     apply,
   } = trace;
+  const treeDepth = useMemo(
+    () =>
+      topic.scene === "tree" && frames.length
+        ? Math.max(...frames.map(treeDepthOf))
+        : 0,
+    [topic.scene, frames],
+  );
 
   return (
     <Card
@@ -175,8 +183,9 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
           key={traceVersion}
           frame={frame}
           previous={previousStep === null ? undefined : frames[previousStep]}
-          linked={linked}
+          kind={topic.scene}
           capacity={capacity}
+          treeDepth={treeDepth}
           duration={1 / speed}
           paused={!playing && stepMode === "automatic"}
           onAnimatingChange={setAnimating}
@@ -198,6 +207,19 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <span className="text-muted-foreground">调用栈</span>
             {frame.stack.map((entry, i) => (
+              <Badge variant="secondary" className="font-mono" key={i}>
+                {entry}
+              </Badge>
+            ))}
+          </div>
+        )}
+        {frame.queue && frame.queue.length > 0 && (
+          <div
+            className="flex flex-wrap items-center gap-2 text-xs"
+            aria-label="队列"
+          >
+            <span className="text-muted-foreground">队列</span>
+            {frame.queue.map((entry, i) => (
               <Badge variant="secondary" className="font-mono" key={i}>
                 {entry}
               </Badge>

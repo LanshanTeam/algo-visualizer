@@ -19,9 +19,15 @@ export type ClockProps = { progress: MotionValue<number>; times: number[] };
 export function SceneNode({
   node,
   linked,
+  circular = false,
   progress,
   times,
-}: ClockProps & { node: AnimationScene["nodes"][number]; linked: boolean }) {
+}: ClockProps & {
+  node: AnimationScene["nodes"][number];
+  linked: boolean;
+  /** 树节点为圆形，用等宽高矩形加圆角实现。 */
+  circular?: boolean;
+}) {
   const present = useIsPresent();
   const x = useTransform(progress, (p) =>
     present ? sampleTrack(node.x, times, p) : node.x.at(-1)!,
@@ -45,7 +51,7 @@ export function SceneNode({
         initial={false}
         width={node.width}
         height={node.height}
-        rx="8"
+        rx={circular ? node.width / 2 : 8}
         animate={{
           ...palette[node.tone],
           strokeWidth:
@@ -106,7 +112,7 @@ export function SceneEdge({
       fill="none"
       stroke={link.highlighted ? palette.active.stroke : "#94a3b8"}
       strokeWidth="2"
-      markerEnd={`url(#${arrowId})`}
+      markerEnd={link.arrow ? `url(#${arrowId})` : undefined}
     />
   );
 }

@@ -7,7 +7,7 @@ import {
 } from "motion/react";
 import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 import { createAnimationScene } from "./animation-scene";
-import type { Frame } from "../core/types";
+import type { Frame, ImplementedSceneKind } from "../core/types";
 import {
   Annotation,
   SceneEdge,
@@ -19,16 +19,18 @@ import {
 export function AnimationCanvas({
   frame,
   previous,
-  linked,
+  kind,
   capacity,
+  treeDepth = 0,
   duration,
   paused = false,
   onAnimatingChange,
 }: {
   frame: Frame;
   previous?: Frame;
-  linked: boolean;
+  kind: ImplementedSceneKind;
   capacity: number;
+  treeDepth?: number;
   duration: number;
   paused?: boolean;
   onAnimatingChange?: (active: boolean) => void;
@@ -40,10 +42,11 @@ export function AnimationCanvas({
       createAnimationScene({
         frame,
         previous,
-        kind: linked ? "linked-list" : "array",
+        kind,
         capacity,
+        treeDepth,
       }),
-    [frame, previous, linked, capacity],
+    [frame, previous, kind, capacity, treeDepth],
   );
   const progress = useMotionValue(1);
   const last = useRef<{ frame?: Frame; previous?: Frame }>({});
@@ -93,7 +96,11 @@ export function AnimationCanvas({
         style={{ minWidth: capacity > 8 ? scene.width : undefined }}
         role="img"
         aria-label={
-          linked ? "链表节点及 next 指针" : "数组分区、比较与交换动画"
+          kind === "linked-list"
+            ? "链表节点及 next 指针"
+            : kind === "tree"
+              ? "二叉树节点与父子边"
+              : "数组分区、比较与交换动画"
         }
       >
         <defs>
@@ -162,7 +169,8 @@ export function AnimationCanvas({
             <SceneNode
               key={node.id}
               node={node}
-              linked={linked}
+              linked={kind === "linked-list"}
+              circular={kind === "tree"}
               progress={progress}
               times={scene.times}
             />

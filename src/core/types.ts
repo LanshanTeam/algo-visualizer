@@ -37,6 +37,8 @@ export interface Frame {
   variables: Record<string, number | string>;
   /** 递归 / 调用栈，非空时工作台会展示。 */
   stack: string[];
+  /** 层序遍历队列，非空时工作台会展示。 */
+  queue?: string[];
   /**
    * 有向连线，元素为 `[fromId, toId]`。
    * 树布局用可选的第三项标记左/右孩子；缺省时按同一父节点的连线顺序回退。
