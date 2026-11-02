@@ -29,11 +29,30 @@ describe("graph topics", () => {
   });
 
   it("defines every traversal trace anchor in every language", () => {
-    const anchors = ["start", "enqueue", "dequeue", "visit", "scan", "discover", "recurse", "backtrack", "done"];
+    const expectedAnchors = {
+      bfs: new Set(
+        graphTraversal
+          .trace({ values: [0], operation: "bfs", index: 0, value: 0 })
+          .map((frame) => frame.anchor),
+      ),
+      dfs: new Set(
+        graphTraversal
+          .trace({ values: [0], operation: "dfs", index: 0, value: 0 })
+          .map((frame) => frame.anchor),
+      ),
+    } as const;
     for (const language of languages) {
-      for (const source of [templates[language].bfs, templates[language].dfs]) {
-        for (const anchor of anchors.filter((name) => source.includes(`@${name}`))) expect(source).toContain(`@${anchor}`);
+      for (const operation of ["bfs", "dfs"] as const) {
+        const code = graphTraversal.code(language, operation);
+        const anchors = new Set(code.flatMap((line) => line.anchor ? [line.anchor] : []));
+        for (const anchor of expectedAnchors[operation]) expect(anchors).toContain(anchor);
       }
     }
+  });
+
+  it("keeps the C DFS teaching template restricted to graph neighbors", () => {
+    const source = templates.C.dfs;
+    expect(source).toContain("graph[u][v] && !visited[v]");
+    expect(source).not.toContain("if (!visited[v]) dfs(v)");
   });
 });

@@ -15,7 +15,7 @@ export const templates: Record<Language, Record<"bfs" | "dfs", string>> = {
     dfs: `void dfs(int u) { // @start
   visited[u] = 1; // @visit
   for (int v = 0; v < n; ++v) { // @scan
-    if (!visited[v]) dfs(v); // @recurse
+    if (graph[u][v] && !visited[v]) dfs(v); // @recurse
   }
   return; // @backtrack
 } // @done`,
