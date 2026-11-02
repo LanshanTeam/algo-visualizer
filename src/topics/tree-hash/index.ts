@@ -1,9 +1,10 @@
-import { Binary, GitFork, Hash, Network, Workflow } from "lucide-react";
+import { Binary, GitFork, Hash, Workflow } from "lucide-react";
 import { plannedTopic, type TopicDefinition } from "../types";
+import { binaryTree } from "./binary-tree";
 
 /**
  * 树与散列专题：哈希表、二叉树、BST、堆、并查集。
- * 树 / 堆需要 2D 布局，等 scene 层支持 `tree` 后再把 status 改成 ready。
+ * 二叉树已接入 tree 布局；BST、堆与并查集仍待实现。
  */
 export const treeHashTopics: TopicDefinition[] = [
   plannedTopic({
@@ -14,15 +15,7 @@ export const treeHashTopics: TopicDefinition[] = [
     summary: "哈希函数映射桶位，用链地址法或开放寻址处理冲突。",
     icon: Hash,
   }),
-  plannedTopic({
-    id: "binary-tree",
-    group: "tree-hash",
-    title: "二叉树遍历",
-    badge: "O(n)",
-    summary: "前序、中序、后序与层序遍历，对比递归栈与队列。",
-    icon: Network,
-    scene: "tree",
-  }),
+  binaryTree,
   plannedTopic({
     id: "bst",
     group: "tree-hash",
