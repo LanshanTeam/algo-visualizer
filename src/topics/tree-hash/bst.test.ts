@@ -268,6 +268,20 @@ describe("删除", () => {
     expect(last.narration).toContain("用 20 接替");
   });
 
+  it("删除只有一个右孩子的 30，并让孩子接替", () => {
+    const frames = bstTrace([50, 30, 40], "delete", 30);
+    expect(frames[2].links).toContainEqual([1, 2, "right"]);
+    const last = frames.at(-1)!;
+    expect(last.anchor).toBe("one_child");
+    expect(last.items).toEqual([
+      { id: 0, value: 50 },
+      { id: 2, value: 40 },
+    ]);
+    expect(last.links).toEqual([[0, 2, "left"]]);
+    expect(last.active).toEqual([1]);
+    expect(last.narration).toContain("用 40 接替");
+  });
+
   it("删除只有一个孩子的根，孩子成为新根", () => {
     const frames = bstTrace([50, 30], "delete", 50);
     const last = frames.at(-1)!;
