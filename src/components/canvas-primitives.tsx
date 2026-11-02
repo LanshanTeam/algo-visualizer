@@ -218,3 +218,44 @@ export function ScenePointer({
     </Annotation>
   );
 }
+
+/** 跟随当前节点的目标值徽章，树场景使用。 */
+export function SceneBadge({
+  badge,
+  progress,
+  times,
+}: ClockProps & { badge: AnimationScene["badges"][number] }) {
+  const x = useTransform(progress, (p) => sampleTrack(badge.x, times, p));
+  const y = useTransform(progress, (p) => sampleTrack(badge.y, times, p));
+  return (
+    <motion.g
+      data-target-badge={badge.text}
+      initial={{ opacity: 0, scale: 0.85 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.85 }}
+      transition={{ duration: 0.15 }}
+    >
+      <motion.g style={{ x, y }}>
+        <rect
+          x={-badge.width / 2}
+          y={-badge.height / 2}
+          width={badge.width}
+          height={badge.height}
+          rx="5"
+          fill={palette[badge.tone].fill}
+          stroke={palette[badge.tone].stroke}
+          strokeWidth="1.5"
+        />
+        <text
+          textAnchor="middle"
+          y={badge.fontSize * 0.35}
+          fill={palette[badge.tone].stroke}
+          fontFamily="monospace"
+          fontSize={badge.fontSize}
+        >
+          {badge.text}
+        </text>
+      </motion.g>
+    </motion.g>
+  );
+}

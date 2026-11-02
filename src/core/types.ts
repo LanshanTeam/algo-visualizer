@@ -52,6 +52,11 @@ export interface Frame {
    * `null` 表示未声明根，非空 `items` 会按森林布局展示。
    */
   rootId?: number | null;
+  /**
+   * 搜索类帧的目标值；树场景会渲染为跟随当前节点的徽章。
+   * 结构修改帧省略；`active` 为空时即使设置也不显示。
+   */
+  target?: number;
 }
 
 export interface CodeLine {

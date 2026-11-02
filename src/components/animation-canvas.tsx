@@ -10,6 +10,7 @@ import { createAnimationScene } from "./animation-scene";
 import type { Frame, ImplementedSceneKind } from "../core/types";
 import {
   Annotation,
+  SceneBadge,
   SceneEdge,
   SceneNode,
   ScenePointer,
@@ -184,6 +185,16 @@ export function AnimationCanvas({
             times={scene.times}
           />
         ))}
+        <AnimatePresence initial={false}>
+          {scene.badges.map((badge) => (
+            <SceneBadge
+              key={badge.key}
+              badge={badge}
+              progress={progress}
+              times={scene.times}
+            />
+          ))}
+        </AnimatePresence>
         {scene.tails.map((tail) => (
           <SceneTail
             key={tail.id}

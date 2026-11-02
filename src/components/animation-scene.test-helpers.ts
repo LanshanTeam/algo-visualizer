@@ -38,6 +38,16 @@ export function verifyScene(
       if (frame.items[frame.pointers[name]]?.id !== pointer.targetId)
         throw new Error("指针标签绑定了错误的节点");
     }
+  for (const badge of scene.badges) {
+    const active = frame.items[frame.active[0]];
+    if (active?.id !== badge.targetId)
+      throw new Error("目标值徽章绑定了错误的节点");
+    if (
+      frame.target === undefined ||
+      !badge.text.includes(String(frame.target))
+    )
+      throw new Error("目标值徽章缺少目标值");
+  }
   for (let tick = 0; tick <= 100; tick++) {
     const t = tick / 100;
     // 树的创建动画会让已有节点滑动，中间时刻允许短暂交叠，只检查静态帧与终点。
@@ -69,6 +79,21 @@ export function verifyScene(
         hidden: index.revealAfterMotion,
       })),
     ].filter((label) => !label.hidden || t === 1);
+    for (const badge of scene.badges) {
+      const box = {
+        x: sampleTrack(badge.x, scene.times, t) - badge.width / 2,
+        y: sampleTrack(badge.y, scene.times, t) - badge.height / 2,
+        width: badge.width,
+        height: badge.height,
+      };
+      if (
+        box.x < 0 ||
+        box.y < 0 ||
+        box.x + box.width > scene.width ||
+        box.y + box.height > scene.height
+      )
+        throw new Error("目标值徽章越界");
+    }
     for (let a = 0; a < nodes.length; a++) {
       const node = nodes[a];
       if (

@@ -22,6 +22,20 @@ export type SceneLink = {
   obstacles: Track[];
 };
 
+/** 跟随当前节点的目标值徽章；树场景专用。 */
+export type SceneBadge = {
+  key: string;
+  text: string;
+  targetId: number;
+  x: number[];
+  y: number[];
+  width: number;
+  height: number;
+  fontSize: number;
+  tone: Tone;
+  placement: "upper-right" | "upper-left";
+};
+
 // 渲染和测试使用同一插值函数；全部几何由一个 0..1 时钟驱动。
 export function sampleTrack(
   values: number[],

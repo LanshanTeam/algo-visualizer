@@ -2,6 +2,7 @@ import type { Frame, ImplementedSceneKind } from "../core/types";
 import {
   overlaps,
   type Box,
+  type SceneBadge,
   type SceneLink,
   type Tone,
 } from "./scene-geometry";
@@ -196,6 +197,7 @@ export function createAnimationScene({
     linked,
     nodes,
     pointers,
+    badges: [],
     indices,
     links,
     tails,
@@ -244,7 +246,7 @@ function createTreeScene({
   capacity: number;
   treeDepth: number;
 }) {
-  const { diameter, width, times, track } = createTreeLayout({
+  const { diameter, width, times, position, track } = createTreeLayout({
     frame,
     previous,
     capacity,
@@ -274,6 +276,57 @@ function createTreeScene({
       fontSize,
     };
   });
+  const activeIndex = frame.active[0];
+  const activeItem =
+    activeIndex === undefined ? undefined : frame.items[activeIndex];
+  let badges: SceneBadge[] = [];
+  if (frame.target !== undefined && activeItem) {
+    const text = `target = ${frame.target}`;
+    const fontSize = 11;
+    const height = 20;
+    const badgeWidth = Math.max(48, Math.ceil(text.length * 6.2 + 12));
+    const place = (state: Frame, id: number) => {
+      const node = position(state, id);
+      let left = node.x + diameter + 6;
+      let placement: SceneBadge["placement"] = "upper-right";
+      if (left + badgeWidth > width - 4) {
+        left = node.x - 6 - badgeWidth;
+        placement = "upper-left";
+      }
+      left = Math.max(4, Math.min(width - badgeWidth - 4, left));
+      const top = Math.max(4, node.y - height);
+      return {
+        x: left + badgeWidth / 2,
+        y: top + height / 2,
+        placement,
+      };
+    };
+    const to = place(frame, activeItem.id);
+    const previousIndex = previous?.active[0];
+    const previousItem =
+      previousIndex === undefined ? undefined : previous?.items[previousIndex];
+    const from =
+      previous?.target !== undefined && previousItem
+        ? place(previous, previousItem.id)
+        : to;
+    badges = [
+      {
+        key: "target",
+        text,
+        targetId: activeItem.id,
+        x: [from.x, to.x],
+        y: [from.y, to.y],
+        width: badgeWidth,
+        height,
+        fontSize,
+        tone: "pivot",
+        placement: to.placement,
+      },
+    ];
+  }
+  const badgeMotion = badges.some(
+    (badge) => badge.x[0] !== badge.x[1] || badge.y[0] !== badge.y[1],
+  );
   const hasMotion =
     !!previous &&
     (nodes.some(
@@ -283,7 +336,8 @@ function createTreeScene({
       previous.items.some(
         (old) => !frame.items.some((item) => item.id === old.id),
       ) ||
-      JSON.stringify(previous.links) !== JSON.stringify(frame.links));
+      JSON.stringify(previous.links) !== JSON.stringify(frame.links) ||
+      badgeMotion);
   const links: SceneLink[] = (frame.links ?? [])
     .filter(
       ([from, to]) => indexOf(from) >= 0 && indexOf(to) >= 0,
@@ -318,6 +372,7 @@ function createTreeScene({
     linked: false,
     nodes,
     pointers: [],
+    badges,
     indices: [],
     links,
     tails: [],
