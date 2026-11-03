@@ -14,6 +14,7 @@ import {
   SceneBucket,
   SceneEdge,
   SceneFormula,
+  SceneHeapCell,
   SceneNode,
   ScenePointer,
   SceneTail,
@@ -101,7 +102,7 @@ export function AnimationCanvas({
         className="block h-auto w-full min-w-[430px] sm:min-w-0"
         style={{
           minWidth:
-            kind === "hash"
+            kind === "hash" || kind === "heap"
               ? scene.width > 430
                 ? scene.width
                 : undefined
@@ -117,7 +118,9 @@ export function AnimationCanvas({
               ? "二叉树节点与父子边"
               : kind === "hash"
                 ? "哈希表桶、冲突链与除留余数法公式"
-                : "数组分区、比较与交换动画"
+                : kind === "heap"
+                  ? "二叉堆的完全二叉树与数组表示"
+                  : "数组分区、比较与交换动画"
         }
       >
         <defs>
@@ -197,12 +200,15 @@ export function AnimationCanvas({
               key={node.id}
               node={node}
               linked={kind === "linked-list"}
-              circular={kind === "tree"}
+              circular={kind === "tree" || kind === "heap"}
               progress={progress}
               times={scene.times}
             />
           ))}
         </AnimatePresence>
+        {scene.heapCells.map((cell) => (
+          <SceneHeapCell key={cell.id} cell={cell} />
+        ))}
         {scene.pointers.map((pointer) => (
           <ScenePointer
             key={pointer.key}

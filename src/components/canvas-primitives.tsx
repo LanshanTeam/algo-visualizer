@@ -275,6 +275,53 @@ export function SceneBucket({
   );
 }
 
+/** 二叉堆底部的数组格，与上方树节点共享色调。 */
+export function SceneHeapCell({
+  cell,
+}: {
+  cell: AnimationScene["heapCells"][number];
+}) {
+  const tone = palette[cell.tone];
+  const fontSize = Math.abs(cell.value) > 99 ? 9 : 10;
+  return (
+    <g data-heap-index={cell.index} data-heap-id={cell.id}>
+      <text
+        x={cell.x + cell.width / 2}
+        y={cell.y - 4}
+        textAnchor="middle"
+        className="fill-muted-foreground font-mono"
+        fontSize="9"
+      >
+        {cell.index}
+      </text>
+      <motion.rect
+        x={cell.x}
+        y={cell.y}
+        width={cell.width}
+        height={cell.height}
+        rx={5}
+        initial={false}
+        animate={{
+          fill: tone.fill,
+          stroke: tone.stroke,
+          strokeWidth: cell.tone === "idle" ? 1 : 1.5,
+        }}
+        transition={{ duration: 0.15 }}
+      />
+      <text
+        x={cell.x + cell.width / 2}
+        y={cell.y + cell.height / 2 + fontSize * 0.35}
+        textAnchor="middle"
+        fill="#1e293b"
+        fontFamily="monospace"
+        fontSize={fontSize}
+      >
+        {cell.value}
+      </text>
+    </g>
+  );
+}
+
 /** 哈希表顶部的除留余数法公式条。 */
 export function SceneFormula({
   formula,
