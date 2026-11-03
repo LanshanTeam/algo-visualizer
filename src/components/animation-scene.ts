@@ -420,15 +420,18 @@ function createHeapScene({
   const links: SceneLink[] = (frame.links ?? [])
     .filter(([from, to]) => indexOf(from) >= 0 && indexOf(to) >= 0)
     .map(([from, to]) => {
+      const parent = indexOf(from);
       const child = indexOf(to);
       return {
         id: `${from}-${to}`,
         geometry: "tree",
         sourceHeight: layout.nodeDiameter,
         arrow: false,
+        // 上浮时孩子是当前节点，下沉时父节点是当前节点；任一端被访问都高亮这条父子边。
         highlighted:
-          child >= 0 &&
-          (frame.active.includes(child) || frame.settled.includes(child)),
+          (parent >= 0 && frame.active.includes(parent)) ||
+          (child >= 0 &&
+            (frame.active.includes(child) || frame.settled.includes(child))),
         obstacles: [],
         from: layout.track(from),
         to: layout.track(to),
