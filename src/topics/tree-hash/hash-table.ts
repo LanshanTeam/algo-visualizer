@@ -116,8 +116,9 @@ function snapshot(
   }: {
     anchor: string;
     narration: string;
-    key: number;
-    bucket: number;
+    /** 准备帧尚未计算桶号，省略后公式条显示通用形式。 */
+    key?: number;
+    bucket?: number;
     active?: number[];
     settled?: number[];
     activeBuckets?: number[];
@@ -141,8 +142,8 @@ function snapshot(
     anchor,
     narration,
     variables: {
-      key,
-      bucket,
+      ...(key === undefined ? {} : { key }),
+      ...(bucket === undefined ? {} : { bucket }),
       compared,
       size: nodes.length,
     },
@@ -217,8 +218,6 @@ function searchFrames(table: HashTable, target: number): Frame[] {
     snapshot(table, {
       anchor: "start",
       narration: `准备查找 ${target}：先计算桶号。`,
-      key: target,
-      bucket,
     }),
     snapshot(table, {
       anchor: "hash",
@@ -302,8 +301,6 @@ function insertFrames(
     snapshot(table, {
       anchor: "start",
       narration: `准备插入 ${target}：先计算桶号。`,
-      key: target,
-      bucket,
     }),
     snapshot(table, {
       anchor: "hash",
@@ -373,8 +370,6 @@ function deleteFrames(table: HashTable, target: number): Frame[] {
     snapshot(table, {
       anchor: "start",
       narration: `准备删除 ${target}：先查找目标键。`,
-      key: target,
-      bucket,
     }),
     snapshot(table, {
       anchor: "hash",
