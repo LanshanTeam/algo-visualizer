@@ -7,12 +7,15 @@ import {
   type SceneFormula,
   type SceneHeapCell,
   type SceneLink,
+  type SceneUnionColumn,
+  type SceneUnionRowLabel,
   type Tone,
 } from "./scene-geometry";
 import { createHashLayout } from "./hash-layout";
 import { createHeapLayout } from "./heap-layout";
 import { createSceneLayout } from "./scene-layout";
 import { createTreeLayout } from "./tree-layout";
+import { createUnionFindLayout } from "./union-find-layout";
 
 export { connectionPathAt, sampleTrack } from "./scene-geometry";
 export type { SceneLink } from "./scene-geometry";
@@ -38,6 +41,8 @@ export function createAnimationScene({
     return createHashScene({ frame, previous, chainCapacity: hashChainCapacity });
   if (kind === "heap")
     return createHeapScene({ frame, previous, capacity });
+  if (kind === "union-find")
+    return createUnionFindScene({ frame, previous, capacity });
   if (kind === "tree")
     return createTreeScene({ frame, previous, capacity, treeDepth });
   const linked = kind === "linked-list";
@@ -215,6 +220,8 @@ export function createAnimationScene({
     buckets: [],
     formula: undefined,
     heapCells: [],
+    unionColumns: [],
+    unionRowLabels: [],
     hasMotion,
     range:
       !linked &&
@@ -377,6 +384,8 @@ function createHashScene({
     buckets,
     formula,
     heapCells: [],
+    unionColumns: [],
+    unionRowLabels: [],
     hasMotion,
     range: undefined,
     slots: [],
@@ -486,6 +495,8 @@ function createHeapScene({
     buckets: [],
     formula: undefined,
     heapCells: cells,
+    unionColumns: [],
+    unionRowLabels: [],
     hasMotion,
     range: undefined,
     slots: [],
@@ -640,12 +651,138 @@ function createTreeScene({
     buckets: [],
     formula: undefined,
     heapCells: [],
+    unionColumns: [],
+    unionRowLabels: [],
     hasMotion,
     range: undefined,
     slots: [],
     empty: !frame.items.length
       ? { text: "空树", x: width / 2, y: 108 }
       : undefined,
+    nullHead: undefined,
+  };
+}
+
+function createUnionFindScene({
+  frame,
+  previous,
+  capacity,
+}: {
+  frame: Frame;
+  previous?: Frame;
+  capacity: number;
+}) {
+  const layout = createUnionFindLayout({ frame, previous, capacity });
+  const indexOf = (id: number) =>
+    frame.items.findIndex((item) => item.id === id);
+  const valueOf = (id: number) =>
+    frame.items.find((item) => item.id === id)?.value ?? id;
+  const nodes = frame.items.map((item, index) => {
+    const parent = frame.unionParents?.[index] ?? item.id;
+    const root = parent === item.id;
+    const tone: Tone = frame.active.includes(index)
+      ? "pivot"
+      : frame.settled.includes(index)
+        ? "active"
+        : root
+          ? "settled"
+          : "idle";
+    const fontSize = Math.abs(item.value) > 99 ? 9 : 11;
+    return {
+      ...item,
+      ...layout.track(item.id),
+      width: layout.nodeDiameter,
+      height: layout.nodeDiameter,
+      tone,
+      muted: false,
+      entering: !!previous && !previous.items.some((old) => old.id === item.id),
+      valueX: layout.nodeDiameter / 2,
+      valueY: layout.nodeDiameter / 2 + fontSize * 0.35,
+      fontSize,
+    };
+  });
+  const links: SceneLink[] = (frame.links ?? [])
+    .filter(([from, to]) => indexOf(from) >= 0 && indexOf(to) >= 0)
+    .map(([from, to]) => {
+      const child = indexOf(from);
+      const parent = indexOf(to);
+      return {
+        id: `${from}-${to}`,
+        geometry: "parent" as const,
+        sourceHeight: layout.nodeDiameter,
+        arrow: true,
+        highlighted:
+          frame.active.includes(child) ||
+          frame.active.includes(parent) ||
+          frame.settled.includes(child),
+        obstacles: [],
+        from: layout.track(from),
+        to: layout.track(to),
+        sourceWidth: layout.nodeDiameter,
+        targetWidth: layout.nodeDiameter,
+        targetHeight: layout.nodeDiameter,
+        portY: 0,
+        existed:
+          previous?.links?.some(
+            (link) => link[0] === from && link[1] === to,
+          ) ?? true,
+      };
+    });
+  const columns: SceneUnionColumn[] = frame.items.map((item, index) => {
+    const parentId = frame.unionParents?.[index] ?? item.id;
+    const tone: Tone = frame.active.includes(index)
+      ? "pivot"
+      : frame.settled.includes(index)
+        ? "active"
+        : parentId === item.id
+          ? "settled"
+          : "idle";
+    return {
+      index,
+      id: item.id,
+      element: item.value,
+      ...layout.column(index),
+      parentId,
+      parent: valueOf(parentId),
+      rank: frame.unionRanks?.[index] ?? 0,
+      root: parentId === item.id,
+      tone,
+    };
+  });
+  const rowLabels: SceneUnionRowLabel[] = layout.rowLabels;
+  const hasMotion =
+    !!previous &&
+    (nodes.some(
+      (node) =>
+        node.entering || new Set(node.x).size > 1 || new Set(node.y).size > 1,
+    ) ||
+      previous.items.some(
+        (old) => !frame.items.some((item) => item.id === old.id),
+      ) ||
+      JSON.stringify(previous.links) !== JSON.stringify(frame.links) ||
+      JSON.stringify(previous.unionParents) !==
+        JSON.stringify(frame.unionParents) ||
+      JSON.stringify(previous.unionRanks) !== JSON.stringify(frame.unionRanks));
+  return {
+    width: layout.width,
+    height: layout.height,
+    times: layout.times,
+    linked: false,
+    nodes,
+    pointers: [],
+    badges: [],
+    indices: [],
+    links,
+    tails: [],
+    buckets: [],
+    formula: undefined,
+    heapCells: [],
+    unionColumns: columns,
+    unionRowLabels: rowLabels,
+    hasMotion,
+    range: undefined,
+    slots: [],
+    empty: undefined,
     nullHead: undefined,
   };
 }

@@ -12,7 +12,8 @@ export type SceneKind =
   | "graph"
   | "tree"
   | "hash"
-  | "heap";
+  | "heap"
+  | "union-find";
 
 /** 渲染器当前真正实现的布局。 */
 export type ImplementedSceneKind =
@@ -20,7 +21,8 @@ export type ImplementedSceneKind =
   | "linked-list"
   | "tree"
   | "hash"
-  | "heap";
+  | "heap"
+  | "union-find";
 
 export interface Item {
   id: number;
@@ -56,6 +58,10 @@ export interface Frame {
   activeBuckets?: number[];
   /** 二叉堆的数组顺序；下标为数组下标，值为节点 id。 */
   heapOrder?: number[];
+  /** 并查集的 parent，按 `items` 顺序；根节点指向自己（父节点 id）。 */
+  unionParents?: number[];
+  /** 并查集的 rank，按 `items` 顺序。 */
+  unionRanks?: number[];
   /**
    * 有向连线，元素为 `[fromId, toId]`。
    * 树布局用可选的第三项标记左/右孩子；缺省时按同一父节点的连线顺序回退。
@@ -87,4 +93,6 @@ export interface TraceInput {
   operation: string;
   index: number;
   value: number;
+  /** 需要第二个元素的专题使用，例如并查集的合并与连通查询。 */
+  value2?: number;
 }

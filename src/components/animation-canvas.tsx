@@ -18,6 +18,8 @@ import {
   SceneNode,
   ScenePointer,
   SceneTail,
+  SceneUnionCell,
+  SceneUnionRowLabel,
 } from "./canvas-primitives";
 
 export function AnimationCanvas({
@@ -102,7 +104,7 @@ export function AnimationCanvas({
         className="block h-auto w-full min-w-[430px] sm:min-w-0"
         style={{
           minWidth:
-            kind === "hash" || kind === "heap"
+            kind === "hash" || kind === "heap" || kind === "union-find"
               ? scene.width > 430
                 ? scene.width
                 : undefined
@@ -120,7 +122,9 @@ export function AnimationCanvas({
                 ? "哈希表桶、冲突链与除留余数法公式"
                 : kind === "heap"
                   ? "二叉堆的完全二叉树与数组表示"
-                  : "数组分区、比较与交换动画"
+                  : kind === "union-find"
+                    ? "并查集森林与 parent、rank 数组"
+                    : "数组分区、比较与交换动画"
         }
       >
         <defs>
@@ -200,7 +204,11 @@ export function AnimationCanvas({
               key={node.id}
               node={node}
               linked={kind === "linked-list"}
-              circular={kind === "tree" || kind === "heap"}
+              circular={
+                kind === "tree" ||
+                kind === "heap" ||
+                kind === "union-find"
+              }
               progress={progress}
               times={scene.times}
             />
@@ -208,6 +216,12 @@ export function AnimationCanvas({
         </AnimatePresence>
         {scene.heapCells.map((cell) => (
           <SceneHeapCell key={cell.id} cell={cell} />
+        ))}
+        {scene.unionColumns.map((column) => (
+          <SceneUnionCell key={column.id} column={column} />
+        ))}
+        {scene.unionRowLabels.map((row) => (
+          <SceneUnionRowLabel key={row.label} row={row} />
         ))}
         {scene.pointers.map((pointer) => (
           <ScenePointer

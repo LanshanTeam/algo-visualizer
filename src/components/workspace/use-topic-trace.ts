@@ -15,6 +15,7 @@ export function useTopicTrace(topic: ReadyTopic) {
     controls.operations?.[0]?.id ??
     "";
   const initialValue = controls.value?.defaultValue ?? DEFAULT_VALUE;
+  const initialValue2 = controls.value2?.defaultValue ?? DEFAULT_VALUE;
   const [language, setLanguage] = useState<Language>("C");
   const [values, setValues] = useState(() =>
     controls.parseInput
@@ -25,12 +26,14 @@ export function useTopicTrace(topic: ReadyTopic) {
   const [operation, setOperation] = useState(initialOperation);
   const [index, setIndex] = useState(DEFAULT_INDEX);
   const [value, setValue] = useState(initialValue);
+  const [value2, setValue2] = useState(initialValue2);
   const [frames, setFrames] = useState(() =>
     topic.trace({
       values,
       operation: initialOperation,
       index: DEFAULT_INDEX,
       value: initialValue,
+      value2: initialValue2,
     }),
   );
   const [step, setStep] = useState(0);
@@ -55,14 +58,21 @@ export function useTopicTrace(topic: ReadyTopic) {
   const showValue =
     !!controls.value &&
     (!controls.value.onlyFor || controls.value.onlyFor.includes(operation));
+  const showValue2 =
+    !!controls.value2 &&
+    (!controls.value2.onlyFor || controls.value2.onlyFor.includes(operation));
   const fieldCount =
-    (controls.operations ? 1 : 0) + (controls.index ? 1 : 0) + (showValue ? 1 : 0);
+    (controls.operations ? 1 : 0) +
+    (controls.index ? 1 : 0) +
+    (showValue ? 1 : 0) +
+    (showValue2 ? 1 : 0);
 
   function load(
     nextValues = values,
     nextOperation = operation,
     nextIndex = index,
     nextValue = value,
+    nextValue2 = value2,
   ) {
     try {
       const next: TraceInput = {
@@ -70,6 +80,7 @@ export function useTopicTrace(topic: ReadyTopic) {
         operation: nextOperation,
         index: nextIndex,
         value: nextValue,
+        value2: nextValue2,
       };
       setFrames(topic.trace(next));
       setStep(0);
@@ -183,6 +194,8 @@ export function useTopicTrace(topic: ReadyTopic) {
     setIndex,
     value,
     setValue,
+    value2,
+    setValue2,
     frames,
     step,
     previousStep,
@@ -200,6 +213,7 @@ export function useTopicTrace(topic: ReadyTopic) {
     code,
     hasTheory,
     showValue,
+    showValue2,
     fieldCount,
     load,
     seek,

@@ -53,6 +53,12 @@ export interface ControlSchema {
     /** 目标值输入框与首帧 trace 的初始值；缺省为 31。 */
     defaultValue?: number;
   };
+  /** 第二个元素输入；并查集的合并与连通查询使用。 */
+  value2?: {
+    label: string;
+    onlyFor?: readonly string[];
+    defaultValue?: number;
+  };
 }
 
 export interface TheoryBlock {

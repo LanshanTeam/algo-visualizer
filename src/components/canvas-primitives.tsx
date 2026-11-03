@@ -322,6 +322,102 @@ export function SceneHeapCell({
   );
 }
 
+/** 并查集底部的一列：元素标签、parent 格与 rank 格。 */
+export function SceneUnionCell({
+  column,
+}: {
+  column: AnimationScene["unionColumns"][number];
+}) {
+  const tone = palette[column.tone];
+  const parentFontSize = Math.abs(column.parent) > 99 ? 8 : 9;
+  return (
+    <g
+      data-union-index={column.index}
+      data-union-id={column.id}
+      data-union-parent={column.parentId}
+      data-union-rank={column.rank}
+      data-union-root={column.root}
+    >
+      <text
+        x={column.x + column.width / 2}
+        y={column.parentY - 4}
+        textAnchor="middle"
+        className="fill-muted-foreground font-mono"
+        fontSize="9"
+      >
+        {column.element}
+      </text>
+      <motion.rect
+        x={column.x}
+        y={column.parentY}
+        width={column.width}
+        height={column.parentHeight}
+        rx={4}
+        initial={false}
+        animate={{
+          fill: tone.fill,
+          stroke: tone.stroke,
+          strokeWidth: column.tone === "idle" ? 1 : 1.5,
+        }}
+        transition={{ duration: 0.15 }}
+      />
+      <text
+        x={column.x + column.width / 2}
+        y={column.parentY + column.parentHeight / 2 + 3.5}
+        textAnchor="middle"
+        fill="#1e293b"
+        fontFamily="monospace"
+        fontSize={parentFontSize}
+      >
+        {column.parent}
+      </text>
+      <motion.rect
+        x={column.x}
+        y={column.rankY}
+        width={column.width}
+        height={column.rankHeight}
+        rx={4}
+        initial={false}
+        animate={{
+          fill: tone.fill,
+          stroke: tone.stroke,
+          strokeWidth: column.tone === "idle" ? 1 : 1.5,
+        }}
+        transition={{ duration: 0.15 }}
+      />
+      <text
+        x={column.x + column.width / 2}
+        y={column.rankY + column.rankHeight / 2 + 3}
+        textAnchor="middle"
+        fill="#1e293b"
+        fontFamily="monospace"
+        fontSize="8"
+      >
+        {column.rank}
+      </text>
+    </g>
+  );
+}
+
+/** 并查集左下角的 parent / rank 行名。 */
+export function SceneUnionRowLabel({
+  row,
+}: {
+  row: AnimationScene["unionRowLabels"][number];
+}) {
+  return (
+    <text
+      x={row.x}
+      y={row.y}
+      data-union-row={row.label}
+      className="fill-muted-foreground font-mono"
+      fontSize="10"
+    >
+      {row.label}
+    </text>
+  );
+}
+
 /** 哈希表顶部的除留余数法公式条。 */
 export function SceneFormula({
   formula,

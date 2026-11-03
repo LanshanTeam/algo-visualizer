@@ -46,6 +46,8 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
     setIndex,
     value,
     setValue,
+    value2,
+    setValue2,
     frames,
     previousStep,
     traceVersion,
@@ -57,6 +59,7 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
     frame,
     capacity,
     showValue,
+    showValue2,
     fieldCount,
     load,
     apply,
@@ -175,6 +178,23 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
                     const next = Number(event.target.value);
                     setValue(next);
                     load(values, operation, index, next);
+                  }}
+                />
+              </div>
+            )}
+            {showValue2 && controls.value2 && (
+              <div className="space-y-2">
+                <Label htmlFor="node-value-b">{controls.value2.label}</Label>
+                <Input
+                  id="node-value-b"
+                  type="number"
+                  min={-999}
+                  max={999}
+                  value={value2}
+                  onChange={(event) => {
+                    const next = Number(event.target.value);
+                    setValue2(next);
+                    load(values, operation, index, value, next);
                   }}
                 />
               </div>
