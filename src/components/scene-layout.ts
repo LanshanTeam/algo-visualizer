@@ -70,8 +70,10 @@ export function createSceneLayout({
       ? position(previous, id)
       : to;
     if (!linked) {
-      // Merge commits are atomic array writes, never a fabricated swap.
-      if (frame.auxiliary) return { x: times.map(() => to.x), y: times.map(() => to.y) };
+      // Merge's "copy" frame commits the whole buffer. Rewinding that
+      // boundary is atomic too; merely carrying an auxiliary row is not.
+      const atomicWriteback = frame.anchor === "copy" || previous?.anchor === "copy";
+      if (atomicWriteback) return { x: times.map(() => to.x), y: times.map(() => to.y) };
       if (extended && (frame.held || previous?.held)) {
         const held = frame.held?.id === id || previous?.held?.id === id;
         return {

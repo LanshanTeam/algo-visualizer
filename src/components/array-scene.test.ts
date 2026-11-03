@@ -65,8 +65,8 @@ describe("extended array scenes", () => {
     expect(scene(write).auxiliary?.nodes[0].opacity).toEqual([1,1,1,1]);
     expect(scene(empty).height).toBe(result.height);
     expect(scene(base).height).toBe(208);
-    const committed: Frame = {...empty, items: [b,c,a]};
-    const commit = scene(committed, {...write, auxiliary: {label:"辅助数组",slots:[b,c,a]}});
+    const committed: Frame = {...empty, anchor: "copy", items: [b,c,a]};
+    const commit = scene(committed, {...write, anchor: "write", auxiliary: {label:"辅助数组",slots:[b,c,a]}});
     expect(commit.nodes.every(n=>new Set(n.x).size===1)).toBe(true);
     expect(commit.hasMotion).toBe(true);
   });

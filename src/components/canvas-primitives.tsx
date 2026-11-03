@@ -15,6 +15,8 @@ export const palette = {
   idle: { stroke: "#cbd5e1", fill: "#fff" },
 };
 export type ClockProps = { progress: MotionValue<number>; times: number[] };
+const nodeRadius = 8;
+const nodeFontSize = (value: number) => (Math.abs(value) > 99 ? 19 : 25);
 
 export function SceneNode({
   node,
@@ -45,7 +47,7 @@ export function SceneNode({
         initial={false}
         width={node.width}
         height={node.height}
-        rx="8"
+        rx={nodeRadius}
         animate={{
           ...palette[node.tone],
           strokeWidth:
@@ -89,8 +91,8 @@ export function AuxiliaryNode({ node, progress, times }: ClockProps & {
   const opacity = useTransform(progress, p => sampleTrack(node.opacity, times, p));
   return (
     <motion.g data-auxiliary-node-id={node.id} transform={`translate(${node.x} ${node.y})`} style={{ opacity }}>
-      <rect width={node.width} height={node.height} rx="8" fill="#eff6ff" stroke="#2563eb" />
-      <text x={node.width / 2} y="34" textAnchor="middle" fontFamily="monospace" fontSize={Math.abs(node.value) > 99 ? 19 : 25} fill="#1e293b">{node.value}</text>
+      <rect width={node.width} height={node.height} rx={nodeRadius} fill={palette.active.fill} stroke={palette.active.stroke} />
+      <text x={node.width / 2} y="34" textAnchor="middle" fontFamily="monospace" fontSize={nodeFontSize(node.value)} fill="#1e293b">{node.value}</text>
     </motion.g>
   );
 }

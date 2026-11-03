@@ -33,9 +33,9 @@ const legendTone: Record<LegendEntry["tone"], string> = {
   idle: "",
 };
 
-function ArrayStage({ linked, children }: { linked: boolean; children: ReactNode }) {
-  // Leave the linked-list DOM and its spacing unchanged.
-  if (linked) return <>{children}</>;
+function ArrayStage({ array, children }: { array: boolean; children: ReactNode }) {
+  // Only array scenes opt into the centered composition.
+  if (!array) return <>{children}</>;
   return (
     <div data-array-stage className="flex min-h-[300px] min-w-0 flex-1 items-center justify-center py-3">
       <div data-array-composition className="flex w-full min-w-0 flex-col items-center gap-2">
@@ -45,9 +45,34 @@ function ArrayStage({ linked, children }: { linked: boolean; children: ReactNode
   );
 }
 
+function ValueInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="node-value">{label}</Label>
+      <Input
+        id="node-value"
+        type="number"
+        min={-999}
+        max={999}
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+      />
+    </div>
+  );
+}
+
 export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: TopicTrace }) {
   const controls = topic.controls;
   const linked = topic.scene === "linked-list";
+  const array = topic.scene === "array";
   const {
     input,
     setInput,
@@ -84,8 +109,8 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
           <h2 id="animation-title">动画</h2>
         </CardTitle>
       </CardHeader>
-      <CardContent className={linked ? "space-y-3 xl:min-h-0 xl:flex-1 xl:overflow-y-auto" : "flex min-h-0 flex-1 flex-col gap-3 xl:overflow-y-auto"}>
-        <div data-array-controls={!linked || undefined} className={!linked ? "grid grid-cols-[minmax(0,1fr)_6rem] gap-3" : undefined}>
+      <CardContent className={array ? "flex min-h-0 flex-1 flex-col gap-3 xl:overflow-y-auto" : "space-y-3 xl:min-h-0 xl:flex-1 xl:overflow-y-auto"}>
+        <div data-array-controls={array || undefined} className={array ? "grid grid-cols-[minmax(0,1fr)_6rem] gap-3" : undefined}>
         <div className="min-w-0 space-y-2">
           <Label htmlFor="values">{controls.dataLabel}</Label>
           <div className="flex gap-2">
@@ -112,19 +137,8 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
             </IconButton>
           </div>
         </div>
-        {!linked && (showValue && controls.value ? (
-          <div className="space-y-2">
-            <Label htmlFor="node-value">{controls.value.label}</Label>
-            <Input id="node-value" type="number" min={-999} max={999} value={value}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setValue(next);
-                load(values, operation, index, next);
-              }} />
-          </div>
-        ) : <div aria-hidden="true" />)}
         </div>
-        {linked && fieldCount > 0 && (
+        {fieldCount > 0 && (
           <div className={`grid gap-3 ${COLUMNS[fieldCount]}`}>
             {controls.operations && (
               <div className="space-y-2">
@@ -169,21 +183,14 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
               </div>
             )}
             {showValue && controls.value && (
-              <div className="space-y-2">
-                <Label htmlFor="node-value">{controls.value.label}</Label>
-                <Input
-                  id="node-value"
-                  type="number"
-                  min={-999}
-                  max={999}
-                  value={value}
-                  onChange={(event) => {
-                    const next = Number(event.target.value);
-                    setValue(next);
-                    load(values, operation, index, next);
-                  }}
-                />
-              </div>
+              <ValueInput
+                label={controls.value.label}
+                value={value}
+                onChange={(next) => {
+                  setValue(next);
+                  load(values, operation, index, next);
+                }}
+              />
             )}
           </div>
         )}
@@ -193,7 +200,7 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
           </Alert>
         )}
         <Separator className="-mx-6 w-auto" />
-        <ArrayStage linked={linked}>
+        <ArrayStage array={array}>
         <AnimationCanvas
           key={traceVersion}
           frame={frame}
@@ -218,7 +225,7 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
           </div>
         )}
         {frame.stack.length > 0 && (
-          <div className={linked ? "flex flex-wrap items-center gap-2 text-xs" : "flex flex-wrap items-center justify-center gap-2 text-xs"}>
+          <div className={array ? "flex flex-wrap items-center justify-center gap-2 text-xs" : "flex flex-wrap items-center gap-2 text-xs"}>
             <span className="text-muted-foreground">调用栈</span>
             {frame.stack.map((entry, i) => (
               <Badge variant="secondary" className="font-mono" key={i}>
