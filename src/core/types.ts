@@ -6,10 +6,20 @@ export type Language = "C" | "C++" | "Python" | "Go" | "Java" | "Rust";
  * 动画画布支持的布局模型。
  * 新增布局时同步扩展 `ImplementedSceneKind`，否则专题无法标记为 ready。
  */
-export type SceneKind = "array" | "linked-list" | "graph" | "tree";
+export type SceneKind =
+  | "array"
+  | "linked-list"
+  | "stack"
+  | "queue"
+  | "graph"
+  | "tree";
 
 /** 渲染器当前真正实现的布局。 */
-export type ImplementedSceneKind = "array" | "linked-list";
+export type ImplementedSceneKind =
+  | "array"
+  | "linked-list"
+  | "stack"
+  | "queue";
 
 export interface Item {
   id: number;

@@ -37,6 +37,11 @@ export interface ControlSchema {
   defaultValues: number[];
   /** 数据规模上限，默认 12。 */
   limit?: number;
+  /**
+   * 画布上固定展示的槽位数（定长容量）。
+   * 缺省时按所有帧中的最大元素数绘制；顺序表、定长栈、顺序队列用它声明容量。
+   */
+  capacity?: number;
   operations?: readonly { id: string; label: string }[];
   index?: IndexControl;
   value?: { label: string; onlyFor?: readonly string[] };

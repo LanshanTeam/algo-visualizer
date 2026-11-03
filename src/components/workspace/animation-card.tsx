@@ -33,7 +33,7 @@ const legendTone: Record<LegendEntry["tone"], string> = {
 
 export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: TopicTrace }) {
   const controls = topic.controls;
-  const linked = topic.scene === "linked-list";
+  const kind = topic.scene;
   const {
     input,
     setInput,
@@ -88,12 +88,17 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
             <IconButton
               label="随机数据"
               onClick={() => {
+                // 按专题的数据上限生成，并留一个空位给插入类操作；
+                // 否则栈这类定容结构会被随机数据直接填满。
+                const count = Math.max(
+                  1,
+                  Math.min(7, (controls.limit ?? 12) - 1),
+                );
                 const next = Array.from(
-                  { length: 7 },
+                  { length: count },
                   () => Math.floor(Math.random() * 90) + 10,
                 );
-                setInput(next.join(", "));
-                load(next);
+                if (load(next)) setInput(next.join(", "));
               }}
             >
               <Shuffle />
@@ -173,7 +178,7 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
           key={traceVersion}
           frame={frame}
           previous={previousStep === null ? undefined : frames[previousStep]}
-          linked={linked}
+          kind={kind}
           capacity={capacity}
           duration={1 / speed}
           paused={!playing && stepMode === "automatic"}

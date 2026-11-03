@@ -34,8 +34,12 @@ export function useTopicTrace(topic: ReadyTopic) {
   const [copied, setCopied] = useState(false);
   const frame = frames[step];
   const capacity = useMemo(
-    () => Math.max(...frames.map((frame) => frame.items.length)),
-    [frames],
+    () =>
+      Math.max(
+        controls.capacity ?? 0,
+        ...frames.map((frame) => frame.items.length),
+      ),
+    [controls.capacity, frames],
   );
   const code = useMemo(
     () => topic.code(language, operation),

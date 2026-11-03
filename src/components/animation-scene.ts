@@ -1,4 +1,4 @@
-import type { Frame } from "../core/types";
+import type { Frame, ImplementedSceneKind } from "../core/types";
 import {
   overlaps,
   type Box,
@@ -20,20 +20,25 @@ export function createAnimationScene({
 }: {
   frame: Frame;
   previous?: Frame;
-  kind: "array" | "linked-list";
+  kind: ImplementedSceneKind;
   capacity: number;
 }) {
   const linked = kind === "linked-list";
+  const vertical = kind === "stack";
+  const queue = kind === "queue";
   const {
     nodeHeight,
     nodeWidth,
     stride,
     baseline,
+    slots,
+    columnX,
+    bottom,
     width,
     times,
     position,
     track,
-  } = createSceneLayout({ frame, previous, linked, capacity });
+  } = createSceneLayout({ frame, previous, kind, capacity });
   const low = Number(frame.variables.low),
     high = Number(frame.variables.high);
   const nodes = frame.items.map((item, index) => {
@@ -53,13 +58,21 @@ export function createAnimationScene({
       tone,
       muted:
         !linked &&
+        !vertical &&
+        !queue &&
         Number.isFinite(low) &&
         (index < low || index > high) &&
         tone !== "settled",
       entering: !!previous && !previous.items.some((old) => old.id === item.id),
       valueX: linked ? 27 : nodeWidth / 2,
-      valueY: 34,
-      fontSize: Math.abs(item.value) > 99 ? 19 : 25,
+      valueY: vertical ? 18 : 34,
+      fontSize: vertical
+        ? Math.abs(item.value) > 99
+          ? 14
+          : 16
+        : Math.abs(item.value) > 99
+          ? 19
+          : 25,
     };
   });
   const hasMotion =
@@ -85,19 +98,16 @@ export function createAnimationScene({
         box,
       ),
     );
-  const groups = new Map<
-    number,
-    { id: number; index: number; names: string[] }
-  >();
+  const groups = new Map<number, { id: number; names: string[] }>();
   for (const [name, index] of Object.entries(frame.pointers)) {
     const item = frame.items[index];
     if (!item) continue;
-    const key = linked ? item.id : index;
-    const group = groups.get(key) ?? { id: item.id, index, names: [] };
+    const key = linked || vertical ? item.id : index;
+    const group = groups.get(key) ?? { id: item.id, names: [] };
     group.names.push(name);
     groups.set(key, group);
   }
-  const pointers = [...groups].map(([key, { id, index, names }]) => {
+  const pointers = [...groups].map(([key, { id, names }]) => {
     const name = names.join(",");
     const above =
       linked && (frame.detached === id || names.includes("newNode"));
@@ -107,12 +117,18 @@ export function createAnimationScene({
       Math.ceil(name.length * fontSize * 0.62 + 12),
     );
     const owner = track(id);
-    const x = linked
-      ? owner.x.map((x) => x + nodeWidth / 2)
-      : times.map(() => 28 + index * stride + nodeWidth / 2);
-    const y = above
-      ? owner.y.map((y) => y - 8)
-      : times.map(() => baseline + nodeHeight + 46);
+    const cell = position(frame, id);
+    // 竖排栈的 top 标注贴在单元格右侧，其余布局的标注贴在单元格下方。
+    const x = vertical
+      ? times.map(() => cell.x + nodeWidth + 10)
+      : above
+        ? owner.x.map((value) => value + nodeWidth / 2)
+        : times.map(() => cell.x + nodeWidth / 2);
+    const y = vertical
+      ? owner.y.map((value) => value + nodeHeight / 2)
+      : above
+        ? owner.y.map((value) => value - 8)
+        : times.map(() => baseline + nodeHeight + 46);
     return {
       key: String(key),
       targetId: id,
@@ -121,10 +137,15 @@ export function createAnimationScene({
       y,
       width: badgeWidth,
       fontSize,
-      placement: above ? ("above" as const) : ("below" as const),
+      placement: vertical
+        ? ("right" as const)
+        : above
+          ? ("above" as const)
+          : ("below" as const),
       tone: names.includes("pivot") ? ("pivot" as const) : ("active" as const),
       revealAfterMotion:
         !linked &&
+        !vertical &&
         crossedByMotion({
           x: x[0] - badgeWidth / 2,
           y: y[0] - 27,
@@ -133,23 +154,54 @@ export function createAnimationScene({
         }),
     };
   });
-  const indices = frame.items
-    .filter((item) => frame.detached !== item.id)
-    .map((item, index) => {
-      const x = position(frame, item.id).x + nodeWidth / 2,
-        y = baseline + nodeHeight + 16;
-      return {
-        index,
-        x,
-        y,
-        revealAfterMotion: crossedByMotion({
-          x: x - 8,
-          y: y - 12,
-          width: 16,
-          height: 16,
-        }),
-      };
-    });
+  const slotBoxes = linked
+    ? []
+    : Array.from({ length: slots }, (_, index) => ({
+        x: vertical ? columnX : 28 + index * stride,
+        y: vertical ? bottom - nodeHeight - index * stride : baseline,
+        width: nodeWidth,
+        height: nodeHeight,
+      }));
+  // 定长布局给每个槽位都标号（空槽也要有），链表只标现有节点。
+  const indices = linked
+    ? frame.items
+        .filter((item) => frame.detached !== item.id)
+        .map((item, index) => {
+          const cell = position(frame, item.id);
+          const x = cell.x + nodeWidth / 2,
+            y = baseline + nodeHeight + 16;
+          return {
+            index,
+            label: String(index),
+            x,
+            y,
+            revealAfterMotion: crossedByMotion({
+              x: x - 8,
+              y: y - 12,
+              width: 16,
+              height: 16,
+            }),
+          };
+        })
+    : slotBoxes.map((slot, index) => {
+        const x = vertical ? slot.x - 18 : slot.x + nodeWidth / 2,
+          y = vertical ? slot.y + nodeHeight / 2 + 4 : baseline + nodeHeight + 16;
+        return {
+          index,
+          label: String(index),
+          x,
+          y,
+          revealAfterMotion:
+            vertical || queue
+              ? false
+              : crossedByMotion({
+                  x: x - 8,
+                  y: y - 12,
+                  width: 16,
+                  height: 16,
+                }),
+        };
+      });
   const changedFrom =
     frame.anchor === "connect"
       ? frame.detached
@@ -185,7 +237,9 @@ export function createAnimationScene({
     width,
     height: 208,
     times,
+    kind,
     linked,
+    vertical,
     nodes,
     pointers,
     indices,
@@ -194,6 +248,8 @@ export function createAnimationScene({
     hasMotion,
     range:
       !linked &&
+      !vertical &&
+      !queue &&
       frame.items.length > 0 &&
       Number.isFinite(low) &&
       Number.isFinite(high)
@@ -204,19 +260,43 @@ export function createAnimationScene({
             height: nodeHeight + 16,
           }
         : undefined,
-    slots: !linked
-      ? frame.items.map((_, index) => ({
-          x: 28 + index * stride,
-          y: baseline,
-          width: nodeWidth,
-          height: nodeHeight,
-        }))
+    // 竖排栈用虚线容器圈出固定容量，其余布局逐槽绘制占位格。
+    container: vertical
+      ? {
+          x: columnX - 6,
+          y: bottom - nodeHeight - (slots - 1) * stride - 6,
+          width: nodeWidth + 12,
+          height: (slots - 1) * stride + nodeHeight + 12,
+        }
+      : undefined,
+    captions: vertical
+      ? [
+          {
+            text: "栈底",
+            x: columnX + nodeWidth / 2,
+            y: 202,
+            anchor: "middle" as const,
+          },
+          {
+            text: `容量 ${slots}`,
+            x: columnX + nodeWidth + 22,
+            y: 202,
+            anchor: "start" as const,
+          },
+        ]
       : [],
+    slots: slotBoxes,
     empty: !frame.items.length
       ? {
-          text: linked ? "head → null" : "空数组",
-          x: width / 2,
-          y: baseline + 32,
+          text: linked
+            ? "head → null"
+            : vertical
+              ? "空栈 top = -1"
+              : queue
+                ? "空队列 front = rear + 1"
+                : "空数组",
+          x: vertical ? columnX + nodeWidth / 2 : width / 2,
+          y: vertical ? 96 : baseline + 32,
         }
       : undefined,
     nullHead:

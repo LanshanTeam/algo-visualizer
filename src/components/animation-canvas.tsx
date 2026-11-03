@@ -7,7 +7,7 @@ import {
 } from "motion/react";
 import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 import { createAnimationScene } from "./animation-scene";
-import type { Frame } from "../core/types";
+import type { Frame, ImplementedSceneKind } from "../core/types";
 import {
   Annotation,
   SceneEdge,
@@ -16,10 +16,17 @@ import {
   SceneTail,
 } from "./canvas-primitives";
 
+const LABELS: Record<ImplementedSceneKind, string> = {
+  array: "数组分区、比较与交换动画",
+  "linked-list": "链表节点及 next 指针",
+  stack: "栈的槽位与栈顶指针",
+  queue: "队列的槽位与队头队尾指针",
+};
+
 export function AnimationCanvas({
   frame,
   previous,
-  linked,
+  kind,
   capacity,
   duration,
   paused = false,
@@ -27,7 +34,7 @@ export function AnimationCanvas({
 }: {
   frame: Frame;
   previous?: Frame;
-  linked: boolean;
+  kind: ImplementedSceneKind;
   capacity: number;
   duration: number;
   paused?: boolean;
@@ -35,15 +42,10 @@ export function AnimationCanvas({
 }) {
   const reduced = useReducedMotion();
   const arrowId = useId().replace(/:/g, "");
+  const linked = kind === "linked-list";
   const scene = useMemo(
-    () =>
-      createAnimationScene({
-        frame,
-        previous,
-        kind: linked ? "linked-list" : "array",
-        capacity,
-      }),
-    [frame, previous, linked, capacity],
+    () => createAnimationScene({ frame, previous, kind, capacity }),
+    [frame, previous, kind, capacity],
   );
   const progress = useMotionValue(1);
   const last = useRef<{ frame?: Frame; previous?: Frame }>({});
@@ -92,9 +94,7 @@ export function AnimationCanvas({
         className="block h-auto w-full min-w-[430px] sm:min-w-0"
         style={{ minWidth: capacity > 8 ? scene.width : undefined }}
         role="img"
-        aria-label={
-          linked ? "链表节点及 next 指针" : "数组分区、比较与交换动画"
-        }
+        aria-label={LABELS[kind]}
       >
         <defs>
           <marker
@@ -109,6 +109,15 @@ export function AnimationCanvas({
             <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" />
           </marker>
         </defs>
+        {scene.container && (
+          <rect
+            {...scene.container}
+            rx="10"
+            fill="#f8fafc"
+            stroke="#cbd5e1"
+            strokeDasharray="6 4"
+          />
+        )}
         {scene.range && (
           <rect
             {...scene.range}
@@ -122,7 +131,7 @@ export function AnimationCanvas({
           <rect
             key={index}
             {...slot}
-            rx="8"
+            rx={scene.vertical ? "6" : "8"}
             fill="#f8fafc"
             stroke="#e2e8f0"
             strokeDasharray="3 3"
@@ -142,7 +151,7 @@ export function AnimationCanvas({
               className="fill-muted-foreground font-mono"
               fontSize="12"
             >
-              {slot.index}
+              {slot.label}
             </text>
           </Annotation>
         ))}
@@ -184,6 +193,18 @@ export function AnimationCanvas({
             times={scene.times}
             arrowId={arrowId}
           />
+        ))}
+        {scene.captions.map((caption) => (
+          <text
+            key={caption.text}
+            x={caption.x}
+            y={caption.y}
+            textAnchor={caption.anchor}
+            className="fill-muted-foreground font-mono"
+            fontSize="11"
+          >
+            {caption.text}
+          </text>
         ))}
         {scene.nullHead && (
           <text
