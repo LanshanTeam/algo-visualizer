@@ -58,6 +58,11 @@ pnpm build
 - `src/components/scene-layout.ts`：节点尺寸、轨道与让位时序。
 - `src/components/animation-canvas.tsx`：将场景模型绘制为 SVG，不决定布局和动作顺序。
 - `src/components/canvas-primitives.tsx`：节点、连线、尾指针与标注等 SVG 原语。
+- `src/components/graph-tree-canvas.tsx`：图论与树共用的二维 SVG 模板；专题只需提供节点坐标、边和状态色。
+
+### 图论 / 树二维模板
+
+`GraphTreeCanvas` 接收 `nodes` 和 `edges` 两组数据。节点使用 `id`、`label`、`x`、`y`，可选 `tone` 和 `detail`；边使用 `from`、`to`，可选 `directed`、`weight`、`tone` 和 `dashed`。算法 trace 每次更新这些 props 即可驱动节点、边和权重的过渡动画。布局坐标由专题或独立布局函数计算，模板不绑定 BFS、DFS、Dijkstra 或具体树结构。
 
 代码面板提供教学片段，不在浏览器中执行。链表代码假定已定义包含 `value` 与 `next` 的 `Node`，C 片段需要 `<stdlib.h>`，C++ 片段需要标准库头文件。索引由界面校验。演示快照的存储不计入算法空间复杂度。
 

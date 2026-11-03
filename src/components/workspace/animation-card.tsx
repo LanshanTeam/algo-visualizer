@@ -16,6 +16,7 @@ import {
 } from "../ui/select";
 import { Separator } from "../ui/separator";
 import { AnimationCanvas } from "../animation-canvas";
+import { GraphAnimationCanvas } from "../graph-animation-canvas";
 import { IconButton } from "./icon-button";
 import { PlaybackBar } from "./playback-bar";
 import type { TopicTrace } from "./use-topic-trace";
@@ -73,6 +74,7 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
   const controls = topic.controls;
   const linked = topic.scene === "linked-list";
   const array = topic.scene === "array";
+  const graph = topic.scene === "graph";
   const {
     input,
     setInput,
@@ -201,39 +203,49 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
         )}
         <Separator className="-mx-6 w-auto" />
         <ArrayStage array={array}>
-        <AnimationCanvas
-          key={traceVersion}
-          frame={frame}
-          previous={previousStep === null ? undefined : frames[previousStep]}
-          linked={linked}
-          capacity={capacity}
-          duration={1 / speed}
-          paused={!playing && stepMode === "automatic"}
-          onAnimatingChange={setAnimating}
-        />
-        {topic.legend && (
-          <div className="flex flex-wrap justify-center gap-2" aria-label="图例">
-            {topic.legend.map((entry) => (
-              <Badge
-                key={entry.label}
-                variant="outline"
-                className={legendTone[entry.tone] || undefined}
-              >
-                {entry.label}
-              </Badge>
-            ))}
-          </div>
-        )}
-        {frame.stack.length > 0 && (
-          <div className={array ? "flex flex-wrap items-center justify-center gap-2 text-xs" : "flex flex-wrap items-center gap-2 text-xs"}>
-            <span className="text-muted-foreground">调用栈</span>
-            {frame.stack.map((entry, i) => (
-              <Badge variant="secondary" className="font-mono" key={i}>
-                {entry}
-              </Badge>
-            ))}
-          </div>
-        )}
+          {graph ? (
+            <GraphAnimationCanvas
+              frame={frame}
+              previous={previousStep === null ? undefined : frames[previousStep]}
+              duration={1 / speed}
+              paused={!playing && stepMode === "automatic"}
+              onAnimatingChange={setAnimating}
+            />
+          ) : (
+            <AnimationCanvas
+              key={traceVersion}
+              frame={frame}
+              previous={previousStep === null ? undefined : frames[previousStep]}
+              linked={linked}
+              capacity={capacity}
+              duration={1 / speed}
+              paused={!playing && stepMode === "automatic"}
+              onAnimatingChange={setAnimating}
+            />
+          )}
+          {topic.legend && (
+            <div className="flex flex-wrap justify-center gap-2" aria-label="图例">
+              {topic.legend.map((entry) => (
+                <Badge
+                  key={entry.label}
+                  variant="outline"
+                  className={legendTone[entry.tone] || undefined}
+                >
+                  {entry.label}
+                </Badge>
+              ))}
+            </div>
+          )}
+          {frame.stack.length > 0 && (
+            <div className={array ? "flex flex-wrap items-center justify-center gap-2 text-xs" : "flex flex-wrap items-center gap-2 text-xs"}>
+              <span className="text-muted-foreground">调用栈</span>
+              {frame.stack.map((entry, i) => (
+                <Badge variant="secondary" className="font-mono" key={i}>
+                  {entry}
+                </Badge>
+              ))}
+            </div>
+          )}
         </ArrayStage>
       </CardContent>
       <PlaybackBar

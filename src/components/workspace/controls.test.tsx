@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import { graphTraversal } from "../../topics/graph/graph-traversal";
 import { binarySearch } from "../../topics/sorting-searching/binary-search";
 import type { ReadyTopic } from "../../topics/types";
 import { TooltipProvider } from "../ui/tooltip";
@@ -15,29 +16,29 @@ const declaredControls: ReadyTopic = {
   },
 };
 
-function FirstFrame({ topic }: { topic: ReadyTopic }) {
-  return <TooltipProvider><AnimationCard topic={topic} trace={useTopicTrace(topic)} /></TooltipProvider>;
+function WorkspaceFrame({ topic, frameIndex = 0 }: { topic: ReadyTopic; frameIndex?: number }) {
+  const trace = useTopicTrace(topic);
+  return <TooltipProvider><AnimationCard topic={topic} trace={{ ...trace, frame: trace.frames[frameIndex], step: frameIndex }} /></TooltipProvider>;
 }
 
 describe("declaration-driven workspace controls", () => {
-  it("does not apply array-only layout to a future non-array scene", () => {
-    // Runtime boundary probe only: graph is not yet an implemented ReadyTopic scene.
-    const futureTopic: ReadyTopic = {
-      ...declaredControls,
-      // @ts-expect-error Graph support is deliberately not merged into this branch.
-      scene: "graph",
-    };
-    const html = renderToStaticMarkup(<FirstFrame topic={futureTopic} />);
-    expect(html.includes("data-array-controls")).toBe(false);
-    expect(html.includes("data-array-stage")).toBe(false);
-    expect(html.includes("data-array-composition")).toBe(false);
+  it("为真实图专题保留操作选择器和独立画布", () => {
+    const html = renderToStaticMarkup(<WorkspaceFrame topic={graphTraversal} />);
+    expect(html).not.toContain("data-array-controls");
+    expect(html).not.toContain("data-array-stage");
+    expect(html).not.toContain("data-array-composition");
     expect(html).toContain('id="operation"');
-    expect(html).toContain('id="index"');
-    expect(html.match(/id="node-value"/g)).toHaveLength(1);
+    expect(html).toContain("data-graph-tree-stage");
+    expect(html).not.toContain("data-animation-stage");
+    const frames = graphTraversal.trace({ values: [0], operation: "bfs", index: 2, value: 31 });
+    const frameIndex = frames.findIndex((frame) => (frame.queue?.length ?? 0) > 0);
+    expect(frameIndex).toBeGreaterThanOrEqual(0);
+    const queuedHtml = renderToStaticMarkup(<WorkspaceFrame topic={graphTraversal} frameIndex={frameIndex} />);
+    expect(queuedHtml).toContain('aria-label="BFS 队列"');
   });
 
   it("renders declared operations and index for an array topic", () => {
-    const html = renderToStaticMarkup(<FirstFrame topic={declaredControls} />);
+    const html = renderToStaticMarkup(<WorkspaceFrame topic={declaredControls} />);
     expect(html).toContain('id="operation"');
     expect(html).toContain('id="index"');
     expect(html).toContain("起始位置");

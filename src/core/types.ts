@@ -9,7 +9,7 @@ export type Language = "C" | "C++" | "Python" | "Go" | "Java" | "Rust";
 export type SceneKind = "array" | "linked-list" | "graph" | "tree";
 
 /** 渲染器当前真正实现的布局。 */
-export type ImplementedSceneKind = "array" | "linked-list";
+export type ImplementedSceneKind = "array" | "linked-list" | "graph";
 
 export interface Item {
   id: number;
@@ -40,8 +40,11 @@ export interface Frame {
   variables: Record<string, number | string>;
   /** 递归 / 调用栈，非空时工作台会展示。 */
   stack: string[];
+  /** BFS waiting queue snapshot, stored as vertex ids. */
+  queue?: number[];
   /** 有向连线，元素为 `[fromId, toId]`。 */
   links?: Array<[number, number]>;
+  edgeWeights?: Record<string, number | string>;
   detached?: number;
   headId?: number | null;
 }

@@ -39,6 +39,7 @@ export interface ControlSchema {
   limit?: number;
   /** 随机数据保持升序；手工输入仍由专题校验，不自动排序。 */
   sorted?: boolean;
+  randomValues?: () => number[];
   operations?: readonly { id: string; label: string }[];
   index?: IndexControl;
   value?: { label: string; onlyFor?: readonly string[] };
