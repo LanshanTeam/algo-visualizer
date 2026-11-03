@@ -7,6 +7,7 @@ import { createAnimationScene } from "./animation-scene";
 import type { Frame } from "../core/types";
 import {
   Annotation,
+  AuxiliaryNode,
   SceneEdge,
   SceneNode,
   ScenePointer,
@@ -52,12 +53,19 @@ export function AnimationCanvas({
   });
 
   return (
-    <ScrollArea className="w-full">
+    <ScrollArea className={linked ? "w-full" : "w-full [&_[data-radix-scroll-area-viewport]>div]:!block"}>
       <svg
         data-animation-stage
         viewBox={`0 0 ${scene.width} ${scene.height}`}
-        className="block h-auto w-full min-w-[430px] sm:min-w-0"
-        style={{ minWidth: capacity > 8 ? scene.width : undefined }}
+        width={scene.width}
+        height={scene.height}
+        preserveAspectRatio={linked ? "xMinYMin meet" : "xMidYMid meet"}
+        className={linked ? "block h-auto w-full min-w-[430px] sm:min-w-0" : "mx-auto block h-auto min-w-0"}
+        // Ordinary arrays fit the viewport, including their boundary pointers.
+        // Only long inputs retain an enlarged minimum width and internal scrolling.
+        style={linked
+          ? { minWidth: capacity > 8 ? scene.width : undefined }
+          : { width: "100%", minWidth: capacity > 8 ? scene.width * 1.2 : undefined, maxWidth: scene.width * 1.2 }}
         role="img"
         aria-label={
           linked ? "链表节点及 next 指针" : "数组分区、比较与交换动画"
@@ -95,6 +103,23 @@ export function AnimationCanvas({
             strokeDasharray="3 3"
           />
         ))}
+        {scene.heldLabel && (
+          <text x={scene.heldLabel.x} y={scene.heldLabel.y} fontSize="12" className="fill-muted-foreground">{scene.heldLabel.text}</text>
+        )}
+        {scene.auxiliary && (
+          <g data-auxiliary-row>
+            <text x={scene.auxiliary.labelX} y={scene.auxiliary.labelY} fontSize="12" className="fill-muted-foreground">{scene.auxiliary.label}</text>
+            {scene.auxiliary.slots.map((slot, index) => (
+              <g key={index}>
+                <rect data-auxiliary-slot={index} {...slot} rx="8" fill="#f8fafc" stroke="#e2e8f0" strokeDasharray="3 3" />
+                <text x={slot.x + slot.width / 2} y={slot.y + slot.height + 16} textAnchor="middle" fontSize="12" className="fill-muted-foreground font-mono">{index}</text>
+              </g>
+            ))}
+            {scene.auxiliary.nodes.map(node => (
+              <AuxiliaryNode key={`${node.index}-${node.id}`} node={node} progress={progress} times={scene.times} />
+            ))}
+          </g>
+        )}
         {scene.indices.map((slot) => (
           <Annotation
             key={slot.index}

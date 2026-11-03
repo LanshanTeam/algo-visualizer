@@ -1,4 +1,6 @@
+import type { ReactNode } from "react";
 import { Shuffle } from "lucide-react";
+import { randomValues } from "../../core/random";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -32,9 +34,46 @@ const legendTone: Record<LegendEntry["tone"], string> = {
   idle: "",
 };
 
+function ArrayStage({ array, children }: { array: boolean; children: ReactNode }) {
+  // Only array scenes opt into the centered composition.
+  if (!array) return <>{children}</>;
+  return (
+    <div data-array-stage className="flex min-h-[300px] min-w-0 flex-1 items-center justify-center py-3">
+      <div data-array-composition className="flex w-full min-w-0 flex-col items-center gap-2">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function ValueInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="node-value">{label}</Label>
+      <Input
+        id="node-value"
+        type="number"
+        min={-999}
+        max={999}
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+      />
+    </div>
+  );
+}
+
 export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: TopicTrace }) {
   const controls = topic.controls;
   const linked = topic.scene === "linked-list";
+  const array = topic.scene === "array";
   const graph = topic.scene === "graph";
   const {
     input,
@@ -72,8 +111,9 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
           <h2 id="animation-title">动画</h2>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3 xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
-        <div className="space-y-2">
+      <CardContent className={array ? "flex min-h-0 flex-1 flex-col gap-3 xl:overflow-y-auto" : "space-y-3 xl:min-h-0 xl:flex-1 xl:overflow-y-auto"}>
+        <div data-array-controls={array || undefined} className={array ? "grid grid-cols-[minmax(0,1fr)_6rem] gap-3" : undefined}>
+        <div className="min-w-0 space-y-2">
           <Label htmlFor="values">{controls.dataLabel}</Label>
           <div className="flex gap-2">
             <Input
@@ -90,8 +130,7 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
             <IconButton
               label="随机数据"
               onClick={() => {
-                const next = controls.randomValues?.() ??
-                  Array.from({ length: 7 }, () => Math.floor(Math.random() * 90) + 10);
+                const next = randomValues(controls);
                 setInput(next.join(", "));
                 load(next);
               }}
@@ -99,6 +138,7 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
               <Shuffle />
             </IconButton>
           </div>
+        </div>
         </div>
         {fieldCount > 0 && (
           <div className={`grid gap-3 ${COLUMNS[fieldCount]}`}>
@@ -145,21 +185,14 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
               </div>
             )}
             {showValue && controls.value && (
-              <div className="space-y-2">
-                <Label htmlFor="node-value">{controls.value.label}</Label>
-                <Input
-                  id="node-value"
-                  type="number"
-                  min={-999}
-                  max={999}
-                  value={value}
-                  onChange={(event) => {
-                    const next = Number(event.target.value);
-                    setValue(next);
-                    load(values, operation, index, next);
-                  }}
-                />
-              </div>
+              <ValueInput
+                label={controls.value.label}
+                value={value}
+                onChange={(next) => {
+                  setValue(next);
+                  load(values, operation, index, next);
+                }}
+              />
             )}
           </div>
         )}
@@ -169,49 +202,51 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
           </Alert>
         )}
         <Separator className="-mx-6 w-auto" />
-        {graph ? (
-          <GraphAnimationCanvas
-            frame={frame}
-            previous={previousStep === null ? undefined : frames[previousStep]}
-            duration={1 / speed}
-            paused={!playing && stepMode === "automatic"}
-            onAnimatingChange={setAnimating}
-          />
-        ) : (
-          <AnimationCanvas
-            key={traceVersion}
-            frame={frame}
-            previous={previousStep === null ? undefined : frames[previousStep]}
-            linked={linked}
-            capacity={capacity}
-            duration={1 / speed}
-            paused={!playing && stepMode === "automatic"}
-            onAnimatingChange={setAnimating}
-          />
-        )}
-        {topic.legend && (
-          <div className="flex flex-wrap justify-center gap-2" aria-label="图例">
-            {topic.legend.map((entry) => (
-              <Badge
-                key={entry.label}
-                variant="outline"
-                className={legendTone[entry.tone] || undefined}
-              >
-                {entry.label}
-              </Badge>
-            ))}
-          </div>
-        )}
-        {frame.stack.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="text-muted-foreground">调用栈</span>
-            {frame.stack.map((entry, i) => (
-              <Badge variant="secondary" className="font-mono" key={i}>
-                {entry}
-              </Badge>
-            ))}
-          </div>
-        )}
+        <ArrayStage array={array}>
+          {graph ? (
+            <GraphAnimationCanvas
+              frame={frame}
+              previous={previousStep === null ? undefined : frames[previousStep]}
+              duration={1 / speed}
+              paused={!playing && stepMode === "automatic"}
+              onAnimatingChange={setAnimating}
+            />
+          ) : (
+            <AnimationCanvas
+              key={traceVersion}
+              frame={frame}
+              previous={previousStep === null ? undefined : frames[previousStep]}
+              linked={linked}
+              capacity={capacity}
+              duration={1 / speed}
+              paused={!playing && stepMode === "automatic"}
+              onAnimatingChange={setAnimating}
+            />
+          )}
+          {topic.legend && (
+            <div className="flex flex-wrap justify-center gap-2" aria-label="图例">
+              {topic.legend.map((entry) => (
+                <Badge
+                  key={entry.label}
+                  variant="outline"
+                  className={legendTone[entry.tone] || undefined}
+                >
+                  {entry.label}
+                </Badge>
+              ))}
+            </div>
+          )}
+          {frame.stack.length > 0 && (
+            <div className={array ? "flex flex-wrap items-center justify-center gap-2 text-xs" : "flex flex-wrap items-center gap-2 text-xs"}>
+              <span className="text-muted-foreground">调用栈</span>
+              {frame.stack.map((entry, i) => (
+                <Badge variant="secondary" className="font-mono" key={i}>
+                  {entry}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </ArrayStage>
       </CardContent>
       <PlaybackBar
         trace={trace}

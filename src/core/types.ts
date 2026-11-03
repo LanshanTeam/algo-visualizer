@@ -18,12 +18,21 @@ export interface Item {
 
 /** 一个可回放的演示快照。 */
 export interface Frame {
+  /** 全体主元素的唯一身份集合；未提供 arraySlots 时也表示主数组顺序。 */
   items: Item[];
+  /** 主数组的真实槽位；null 是空洞，不复制或交换暂存元素。 */
+  arraySlots?: (Item | null)[];
+  /** 插入排序从主数组取出的暂存元素。 */
+  held?: Item;
+  /** 独立辅助数组，槽位下标与主数组对齐。 */
+  auxiliary?: { label: string; slots: (Item | null)[] };
+  /** 闭区间；low > high 表示空区间，不绘制范围。 */
+  range?: { low: number; high: number };
   /** 当前操作涉及的节点，渲染为高亮。 */
   active: number[];
   /** 已归位的节点。 */
   settled: number[];
-  /** 指针名到 `items` 下标的映射。 */
+  /** 指针名到主数组槽位（arraySlots ?? items）下标的映射；链表使用 items 下标。 */
   pointers: Record<string, number>;
   /** 语义步骤标识，与代码行的 `@anchor` 对应。 */
   anchor: string;

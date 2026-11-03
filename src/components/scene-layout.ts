@@ -14,14 +14,23 @@ export function createSceneLayout({
 }) {
   const nodeHeight = 52,
     nodeWidth = linked ? 80 : 58,
-    stride = linked ? 112 : 76;
+    // Tighter array columns enlarge the whole SVG at constrained widths;
+    // increasing maxWidth alone has no effect when the card is narrower.
+    // Keep 10 units between cells and preserve all vertical motion lanes.
+    stride = linked ? 112 : 68;
+  const extended = !linked && (frame.arraySlots !== undefined || frame.held !== undefined || frame.auxiliary !== undefined);
   const baseline = linked ? 84 : 72;
+  // Leave a real gap below the held node without moving the shared main row.
+  const heldY = 16;
   const width = Math.max(
     430,
     56 + Math.max(0, capacity - 1) * stride + nodeWidth + (linked ? 72 : 0),
   );
   const position = (state: Frame, id: number) => {
-    const index = state.items.findIndex((item) => item.id === id);
+    const index = !linked && state.arraySlots
+      ? state.arraySlots.findIndex((item) => item?.id === id)
+      : state.items.findIndex((item) => item.id === id);
+    if (!linked && state.held?.id === id) return { x: 28, y: heldY };
     const preparingInsert =
       linked &&
       state.detached !== undefined &&
@@ -61,6 +70,17 @@ export function createSceneLayout({
       ? position(previous, id)
       : to;
     if (!linked) {
+      // Merge's "copy" frame commits the whole buffer. Rewinding that
+      // boundary is atomic too; merely carrying an auxiliary row is not.
+      const atomicWriteback = frame.anchor === "copy" || previous?.anchor === "copy";
+      if (atomicWriteback) return { x: times.map(() => to.x), y: times.map(() => to.y) };
+      if (extended && (frame.held || previous?.held)) {
+        const held = frame.held?.id === id || previous?.held?.id === id;
+        return {
+          x: [from.x, from.x, to.x, to.x],
+          y: held ? [from.y, heldY, heldY, to.y] : [from.y, from.y, to.y, to.y],
+        };
+      }
       const lane = from.x === to.x ? 0 : from.x < to.x ? -64 : 64;
       return {
         x: [from.x, from.x, to.x, to.x],
@@ -78,6 +98,7 @@ export function createSceneLayout({
     return { x: [from.x, to.x], y: [from.y, to.y] };
   };
   return {
+    height: !linked && frame.auxiliary ? 284 : 208,
     nodeHeight,
     nodeWidth,
     stride,
