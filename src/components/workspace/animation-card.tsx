@@ -14,6 +14,7 @@ import {
 } from "../ui/select";
 import { Separator } from "../ui/separator";
 import { AnimationCanvas } from "../animation-canvas";
+import { GraphAnimationCanvas } from "../graph-animation-canvas";
 import { IconButton } from "./icon-button";
 import { PlaybackBar } from "./playback-bar";
 import type { TopicTrace } from "./use-topic-trace";
@@ -34,6 +35,7 @@ const legendTone: Record<LegendEntry["tone"], string> = {
 export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: TopicTrace }) {
   const controls = topic.controls;
   const linked = topic.scene === "linked-list";
+  const graph = topic.scene === "graph";
   const {
     input,
     setInput,
@@ -88,10 +90,8 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
             <IconButton
               label="随机数据"
               onClick={() => {
-                const next = Array.from(
-                  { length: 7 },
-                  () => Math.floor(Math.random() * 90) + 10,
-                );
+                const next = controls.randomValues?.() ??
+                  Array.from({ length: 7 }, () => Math.floor(Math.random() * 90) + 10);
                 setInput(next.join(", "));
                 load(next);
               }}
@@ -169,16 +169,26 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
           </Alert>
         )}
         <Separator className="-mx-6 w-auto" />
-        <AnimationCanvas
-          key={traceVersion}
-          frame={frame}
-          previous={previousStep === null ? undefined : frames[previousStep]}
-          linked={linked}
-          capacity={capacity}
-          duration={1 / speed}
-          paused={!playing && stepMode === "automatic"}
-          onAnimatingChange={setAnimating}
-        />
+        {graph ? (
+          <GraphAnimationCanvas
+            frame={frame}
+            previous={previousStep === null ? undefined : frames[previousStep]}
+            duration={1 / speed}
+            paused={!playing && stepMode === "automatic"}
+            onAnimatingChange={setAnimating}
+          />
+        ) : (
+          <AnimationCanvas
+            key={traceVersion}
+            frame={frame}
+            previous={previousStep === null ? undefined : frames[previousStep]}
+            linked={linked}
+            capacity={capacity}
+            duration={1 / speed}
+            paused={!playing && stepMode === "automatic"}
+            onAnimatingChange={setAnimating}
+          />
+        )}
         {topic.legend && (
           <div className="flex flex-wrap justify-center gap-2" aria-label="图例">
             {topic.legend.map((entry) => (
