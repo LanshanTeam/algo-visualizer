@@ -11,7 +11,9 @@ import type { Frame, ImplementedSceneKind } from "../core/types";
 import {
   Annotation,
   SceneBadge,
+  SceneBucket,
   SceneEdge,
+  SceneFormula,
   SceneNode,
   ScenePointer,
   SceneTail,
@@ -23,6 +25,7 @@ export function AnimationCanvas({
   kind,
   capacity,
   treeDepth = 0,
+  hashChainCapacity = 0,
   duration,
   paused = false,
   onAnimatingChange,
@@ -32,6 +35,7 @@ export function AnimationCanvas({
   kind: ImplementedSceneKind;
   capacity: number;
   treeDepth?: number;
+  hashChainCapacity?: number;
   duration: number;
   paused?: boolean;
   onAnimatingChange?: (active: boolean) => void;
@@ -46,8 +50,9 @@ export function AnimationCanvas({
         kind,
         capacity,
         treeDepth,
+        hashChainCapacity,
       }),
-    [frame, previous, kind, capacity, treeDepth],
+    [frame, previous, kind, capacity, treeDepth, hashChainCapacity],
   );
   const progress = useMotionValue(1);
   const last = useRef<{ frame?: Frame; previous?: Frame }>({});
@@ -94,14 +99,25 @@ export function AnimationCanvas({
         data-animation-stage
         viewBox={`0 0 ${scene.width} ${scene.height}`}
         className="block h-auto w-full min-w-[430px] sm:min-w-0"
-        style={{ minWidth: capacity > 8 ? scene.width : undefined }}
+        style={{
+          minWidth:
+            kind === "hash"
+              ? scene.width > 430
+                ? scene.width
+                : undefined
+              : capacity > 8
+                ? scene.width
+                : undefined,
+        }}
         role="img"
         aria-label={
           kind === "linked-list"
             ? "链表节点及 next 指针"
             : kind === "tree"
               ? "二叉树节点与父子边"
-              : "数组分区、比较与交换动画"
+              : kind === "hash"
+                ? "哈希表桶、冲突链与除留余数法公式"
+                : "数组分区、比较与交换动画"
         }
       >
         <defs>
@@ -117,6 +133,7 @@ export function AnimationCanvas({
             <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" />
           </marker>
         </defs>
+        {scene.formula && <SceneFormula formula={scene.formula} />}
         {scene.range && (
           <rect
             {...scene.range}
@@ -153,6 +170,15 @@ export function AnimationCanvas({
               {slot.index}
             </text>
           </Annotation>
+        ))}
+        {scene.buckets.map((bucket) => (
+          <SceneBucket
+            key={bucket.index}
+            bucket={bucket}
+            progress={progress}
+            times={scene.times}
+            arrowId={arrowId}
+          />
         ))}
         <AnimatePresence initial={false}>
           {scene.links.map((link) => (

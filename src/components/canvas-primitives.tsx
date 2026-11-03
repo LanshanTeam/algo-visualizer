@@ -219,6 +219,94 @@ export function ScenePointer({
   );
 }
 
+/** 哈希表的桶格；空桶虚线，非空桶用箭头接到链头。 */
+export function SceneBucket({
+  bucket,
+  progress,
+  times,
+  arrowId,
+}: ClockProps & {
+  bucket: AnimationScene["buckets"][number];
+  arrowId: string;
+}) {
+  const headX = bucket.head?.x ?? [0];
+  const headY = bucket.head?.y ?? [0];
+  const x2 = useTransform(progress, (p) => sampleTrack(headX, times, p) - 6);
+  const y2 = useTransform(progress, (p) => sampleTrack(headY, times, p));
+  const tone = bucket.active ? palette.pivot : palette.idle;
+  return (
+    <g data-bucket-index={bucket.index} data-bucket-active={bucket.active}>
+      <motion.rect
+        x={bucket.x}
+        y={bucket.y}
+        width={bucket.width}
+        height={bucket.height}
+        rx={6}
+        animate={{
+          fill: tone.fill,
+          stroke: tone.stroke,
+          strokeWidth: bucket.active ? 2 : 1.5,
+        }}
+        transition={{ duration: 0.15 }}
+        strokeDasharray={bucket.head ? undefined : "3 3"}
+      />
+      <text
+        x={bucket.x + bucket.width / 2}
+        y={bucket.y + bucket.height / 2 + 4}
+        textAnchor="middle"
+        fill={bucket.active ? palette.pivot.stroke : "#64748b"}
+        fontFamily="monospace"
+        fontSize="11"
+      >
+        {bucket.index}
+      </text>
+      {bucket.head && (
+        <motion.line
+          x1={bucket.x + bucket.width}
+          y1={bucket.y + bucket.height / 2}
+          x2={x2}
+          y2={y2}
+          stroke={bucket.active ? palette.pivot.stroke : "#94a3b8"}
+          strokeWidth="1.5"
+          markerEnd={`url(#${arrowId})`}
+        />
+      )}
+    </g>
+  );
+}
+
+/** 哈希表顶部的除留余数法公式条。 */
+export function SceneFormula({
+  formula,
+}: {
+  formula: AnimationScene["formula"];
+}) {
+  if (!formula) return null;
+  return (
+    <g data-hash-formula={formula.text}>
+      <rect
+        x={formula.x}
+        y={formula.y}
+        width={formula.width}
+        height={formula.height}
+        rx={6}
+        fill={formula.active ? palette.pivot.fill : "#f8fafc"}
+        stroke={formula.active ? palette.pivot.stroke : "#cbd5e1"}
+        strokeWidth={formula.active ? 1.5 : 1}
+      />
+      <text
+        x={formula.x + 10}
+        y={formula.y + formula.height / 2 + 4}
+        fill={formula.active ? palette.pivot.stroke : "#475569"}
+        fontFamily="monospace"
+        fontSize="11"
+      >
+        {formula.text}
+      </text>
+    </g>
+  );
+}
+
 /** 跟随当前节点的目标值徽章，树场景使用。 */
 export function SceneBadge({
   badge,

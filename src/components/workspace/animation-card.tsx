@@ -15,6 +15,7 @@ import {
 } from "../ui/select";
 import { Separator } from "../ui/separator";
 import { AnimationCanvas } from "../animation-canvas";
+import { hashChainCapacityOf } from "../hash-layout";
 import { treeDepthOf } from "../tree-layout";
 import { IconButton } from "./icon-button";
 import { PlaybackBar } from "./playback-bar";
@@ -64,6 +65,13 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
     () =>
       topic.scene === "tree" && frames.length
         ? Math.max(...frames.map(treeDepthOf))
+        : 0,
+    [topic.scene, frames],
+  );
+  const hashChainCapacity = useMemo(
+    () =>
+      topic.scene === "hash" && frames.length
+        ? Math.max(...frames.map(hashChainCapacityOf))
         : 0,
     [topic.scene, frames],
   );
@@ -186,6 +194,7 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
           kind={topic.scene}
           capacity={capacity}
           treeDepth={treeDepth}
+          hashChainCapacity={hashChainCapacity}
           duration={1 / speed}
           paused={!playing && stepMode === "automatic"}
           onAnimatingChange={setAnimating}
