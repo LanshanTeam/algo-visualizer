@@ -1,21 +1,15 @@
-import { GitFork, Hash, Workflow } from "lucide-react";
+import { GitFork, Workflow } from "lucide-react";
 import { plannedTopic, type TopicDefinition } from "../types";
 import { binaryTree } from "./binary-tree";
 import { bst } from "./bst";
+import { hashTable } from "./hash-table";
 
 /**
  * 树与散列专题：哈希表、二叉树、BST、堆、并查集。
- * 二叉树已接入 tree 布局；BST、堆与并查集仍待实现。
+ * 哈希表、二叉树与 BST 已接入；堆与并查集仍待实现。
  */
 export const treeHashTopics: TopicDefinition[] = [
-  plannedTopic({
-    id: "hash-table",
-    group: "tree-hash",
-    title: "哈希表",
-    badge: "O(1)",
-    summary: "哈希函数映射桶位，用链地址法或开放寻址处理冲突。",
-    icon: Hash,
-  }),
+  hashTable,
   binaryTree,
   bst,
   plannedTopic({
