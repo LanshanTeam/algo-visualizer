@@ -13,7 +13,8 @@ export type SceneKind =
   | "linked-list"
   | "tree"
   | "hash"
-  | "heap";
+  | "heap"
+  | "union-find";
 export type Box = { x: number; y: number; width: number; height: number };
 export function overlaps(a: Box, b: Box) {
   return (
@@ -42,6 +43,7 @@ export function verifyScene(
   const tree = kind === "tree";
   const hash = kind === "hash";
   const heap = kind === "heap";
+  const union = kind === "union-find";
   const treeLike = tree || heap;
   expect(scene.height).toBeLessThanOrEqual(220);
   for (const pointer of scene.pointers)
@@ -71,6 +73,83 @@ export function verifyScene(
     if (!hash) throw new Error("只有哈希场景应显示公式条");
   } else if (hash) {
     throw new Error("哈希场景缺少公式条");
+  }
+  if (union) {
+    const parents = frame.unionParents ?? [];
+    const ranks = frame.unionRanks ?? [];
+    const ids = frame.items.map((item) => item.id);
+    const known = new Set(ids);
+    const indexById = new Map(
+      ids.map((id, index) => [id, index] as const),
+    );
+    const parentOf = (id: number) => parents[indexById.get(id)!];
+    if (parents.length !== ids.length)
+      throw new Error("并查集 parent 没有覆盖全部元素");
+    if (ranks.length !== ids.length)
+      throw new Error("并查集 rank 没有覆盖全部元素");
+    const expectedLinks = new Set<string>();
+    parents.forEach((parent, index) => {
+      if (!known.has(parent))
+        throw new Error("并查集 parent 指向不存在的元素");
+      if (parent !== ids[index])
+        expectedLinks.add(`${ids[index]}-${parent}`);
+      const seen = new Set<number>();
+      let node = ids[index];
+      while (parentOf(node) !== node) {
+        if (seen.has(node)) throw new Error("并查集 parent 成环");
+        seen.add(node);
+        node = parentOf(node);
+      }
+      if (seen.size > ids.length) throw new Error("并查集 parent 成环");
+    });
+    if (scene.unionColumns.length !== frame.items.length)
+      throw new Error("并查集数组列数量与元素数不一致");
+    if (scene.unionRowLabels.length !== 2)
+      throw new Error("并查集缺少 parent / rank 行名");
+    const boxes = scene.unionColumns.map((column) => ({
+      x: column.x,
+      y: column.parentY,
+      width: column.width,
+      height:
+        column.rankY + column.rankHeight - column.parentY,
+    }));
+    scene.unionColumns.forEach((column, index) => {
+      const item = frame.items[index];
+      const parentId = parents[index];
+      const parentItem = frame.items.find((entry) => entry.id === parentId);
+      if (
+        column.index !== index ||
+        column.id !== item.id ||
+        column.element !== item.value ||
+        column.parentId !== parentId ||
+        column.parent !== parentItem?.value ||
+        column.rank !== ranks[index] ||
+        column.root !== (parentId === item.id) ||
+        column.x < 0 ||
+        column.parentY < 0 ||
+        column.x + column.width > scene.width ||
+        column.rankY + column.rankHeight > scene.height
+      )
+        throw new Error("并查集数组列与帧数据不一致");
+      for (let other = index + 1; other < boxes.length; other++)
+        if (overlaps(boxes[index], boxes[other]))
+          throw new Error("并查集数组列相交");
+      for (const node of scene.nodes)
+        if (
+          overlaps(boxes[index], {
+            x: node.x.at(-1)!,
+            y: node.y.at(-1)!,
+            width: node.width,
+            height: node.height,
+          })
+        )
+          throw new Error("并查集数组列压住树节点");
+    });
+    const actualLinks = new Set(scene.links.map((link) => link.id));
+    for (const id of expectedLinks)
+      if (!actualLinks.has(id)) throw new Error("并查集缺少父子连线");
+    for (const id of actualLinks)
+      if (!expectedLinks.has(id)) throw new Error("并查集多出父子连线");
   }
   if (heap) {
     const order = frame.heapOrder ?? [];
@@ -120,8 +199,9 @@ export function verifyScene(
   }
   for (let tick = 0; tick <= 100; tick++) {
     const t = tick / 100;
-    // 树、堆与哈希的动画会让已有节点滑动，中间时刻允许短暂交叠，只检查静态帧与终点。
-    const checkCollisions = (!treeLike && !hash) || !previous || t === 1;
+    // 树、堆、哈希与并查集的动画会让已有节点滑动，中间时刻允许短暂交叠，只检查静态帧与终点。
+    const checkCollisions =
+      (!treeLike && !hash && !union) || !previous || t === 1;
     const nodes = scene.nodes.map((node) => ({
       ...node,
       x: sampleTrack(node.x, scene.times, t),
@@ -196,6 +276,34 @@ export function verifyScene(
         .match(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi)!
         .map(Number);
       const [ex, ey] = numbers.slice(-2);
+      if (union) {
+        if (!link.arrow || link.geometry !== "parent")
+          throw new Error("并查集边应为带箭头的孩子到父节点连线");
+        if (
+          Math.abs(numbers[0] - (a.x + a.width / 2)) > 1e-6 ||
+          Math.abs(numbers[1] - a.y) > 1e-6 ||
+          Math.abs(ex - (b.x + b.width / 2)) > 1e-6 ||
+          Math.abs(ey - (b.y + b.height)) > 1e-6
+        )
+          throw new Error("并查集边端点没有连接孩子顶边与父节点底边");
+        if (checkCollisions)
+          for (let step = 1; step < 20; step++) {
+            const u = step / 20;
+            const x = numbers[0] + (numbers[2] - numbers[0]) * u;
+            const y = numbers[1] + (numbers[3] - numbers[1]) * u;
+            for (const other of nodes)
+              if (
+                other.id !== from &&
+                other.id !== to &&
+                x > other.x &&
+                x < other.x + other.width &&
+                y > other.y &&
+                y < other.y + other.height
+              )
+                throw new Error("并查集边穿过非端点节点");
+          }
+        continue;
+      }
       if (hash) {
         if (!link.arrow || link.geometry !== "hash")
           throw new Error("哈希链应为带箭头的水平连线");
