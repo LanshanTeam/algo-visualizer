@@ -11,14 +11,16 @@ export type SceneKind =
   | "linked-list"
   | "graph"
   | "tree"
-  | "hash";
+  | "hash"
+  | "heap";
 
 /** 渲染器当前真正实现的布局。 */
 export type ImplementedSceneKind =
   | "array"
   | "linked-list"
   | "tree"
-  | "hash";
+  | "hash"
+  | "heap";
 
 export interface Item {
   id: number;
@@ -52,6 +54,8 @@ export interface Frame {
   bucketHeads?: (number | null)[];
   /** 当前正在检查/高亮的桶号。 */
   activeBuckets?: number[];
+  /** 二叉堆的数组顺序；下标为数组下标，值为节点 id。 */
+  heapOrder?: number[];
   /**
    * 有向连线，元素为 `[fromId, toId]`。
    * 树布局用可选的第三项标记左/右孩子；缺省时按同一父节点的连线顺序回退。

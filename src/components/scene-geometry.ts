@@ -57,6 +57,18 @@ export type SceneFormula = {
   active: boolean;
 };
 
+/** 二叉堆底部数组的一格，与树节点共享节点 id 和色调。 */
+export type SceneHeapCell = {
+  index: number;
+  id: number;
+  value: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  tone: Tone;
+};
+
 // 渲染和测试使用同一插值函数；全部几何由一个 0..1 时钟驱动。
 export function sampleTrack(
   values: number[],

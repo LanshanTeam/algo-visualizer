@@ -5,10 +5,12 @@ import {
   type SceneBadge,
   type SceneBucket,
   type SceneFormula,
+  type SceneHeapCell,
   type SceneLink,
   type Tone,
 } from "./scene-geometry";
 import { createHashLayout } from "./hash-layout";
+import { createHeapLayout } from "./heap-layout";
 import { createSceneLayout } from "./scene-layout";
 import { createTreeLayout } from "./tree-layout";
 
@@ -34,6 +36,8 @@ export function createAnimationScene({
 }) {
   if (kind === "hash")
     return createHashScene({ frame, previous, chainCapacity: hashChainCapacity });
+  if (kind === "heap")
+    return createHeapScene({ frame, previous, capacity });
   if (kind === "tree")
     return createTreeScene({ frame, previous, capacity, treeDepth });
   const linked = kind === "linked-list";
@@ -210,6 +214,7 @@ export function createAnimationScene({
     tails,
     buckets: [],
     formula: undefined,
+    heapCells: [],
     hasMotion,
     range:
       !linked &&
@@ -371,10 +376,119 @@ function createHashScene({
     tails: [],
     buckets,
     formula,
+    heapCells: [],
     hasMotion,
     range: undefined,
     slots: [],
     empty: undefined,
+    nullHead: undefined,
+  };
+}
+
+function createHeapScene({
+  frame,
+  previous,
+  capacity,
+}: {
+  frame: Frame;
+  previous?: Frame;
+  capacity: number;
+}) {
+  const layout = createHeapLayout({ frame, previous, capacity });
+  const indexOf = (id: number) =>
+    frame.items.findIndex((item) => item.id === id);
+  const nodes = frame.items.map((item, index) => {
+    const tone: Tone = frame.active.includes(index)
+      ? "pivot"
+      : frame.settled.includes(index)
+        ? "active"
+        : "idle";
+    const fontSize = Math.abs(item.value) > 99 ? 11 : 14;
+    return {
+      ...item,
+      ...layout.track(item.id),
+      width: layout.nodeDiameter,
+      height: layout.nodeDiameter,
+      tone,
+      muted: false,
+      entering: !!previous && !previous.items.some((old) => old.id === item.id),
+      valueX: layout.nodeDiameter / 2,
+      valueY: layout.nodeDiameter / 2 + fontSize * 0.35,
+      fontSize,
+    };
+  });
+  const links: SceneLink[] = (frame.links ?? [])
+    .filter(([from, to]) => indexOf(from) >= 0 && indexOf(to) >= 0)
+    .map(([from, to]) => {
+      const child = indexOf(to);
+      return {
+        id: `${from}-${to}`,
+        geometry: "tree",
+        sourceHeight: layout.nodeDiameter,
+        arrow: false,
+        highlighted:
+          child >= 0 &&
+          (frame.active.includes(child) || frame.settled.includes(child)),
+        obstacles: [],
+        from: layout.track(from),
+        to: layout.track(to),
+        sourceWidth: layout.nodeDiameter,
+        targetWidth: layout.nodeDiameter,
+        targetHeight: layout.nodeDiameter,
+        portY: 0,
+        existed:
+          previous?.links?.some(
+            (link) => link[0] === from && link[1] === to,
+          ) ?? true,
+      };
+    });
+  const cells: SceneHeapCell[] = layout.order.map((id, index) => {
+    const itemIndex = indexOf(id);
+    const item = frame.items[itemIndex];
+    const tone: Tone = frame.active.includes(itemIndex)
+      ? "pivot"
+      : frame.settled.includes(itemIndex)
+        ? "active"
+        : "idle";
+    return {
+      index,
+      id,
+      value: item.value,
+      ...layout.cell(index),
+      tone,
+    };
+  });
+  const hasMotion =
+    !!previous &&
+    (nodes.some(
+      (node) =>
+        node.entering || new Set(node.x).size > 1 || new Set(node.y).size > 1,
+    ) ||
+      previous.items.some(
+        (old) => !frame.items.some((item) => item.id === old.id),
+      ) ||
+      JSON.stringify(previous.links) !== JSON.stringify(frame.links) ||
+      JSON.stringify(previous.heapOrder) !== JSON.stringify(frame.heapOrder));
+  return {
+    width: layout.width,
+    height: layout.height,
+    times: layout.times,
+    linked: false,
+    nodes,
+    pointers: [],
+    badges: [],
+    indices: [],
+    links,
+    tails: [],
+    buckets: [],
+    formula: undefined,
+    heapCells: cells,
+    hasMotion,
+    range: undefined,
+    slots: [],
+    empty: frame.items.length
+      ? undefined
+      : { text: "空堆", x: layout.width / 2, y: 90 },
     nullHead: undefined,
   };
 }
@@ -522,6 +636,7 @@ function createTreeScene({
     tails: [],
     buckets: [],
     formula: undefined,
+    heapCells: [],
     hasMotion,
     range: undefined,
     slots: [],

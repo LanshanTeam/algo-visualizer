@@ -8,7 +8,12 @@ import {
 import { hashChainCapacityOf } from "./hash-layout";
 import { treeDepthOf } from "./tree-layout";
 
-export type SceneKind = "array" | "linked-list" | "tree" | "hash";
+export type SceneKind =
+  | "array"
+  | "linked-list"
+  | "tree"
+  | "hash"
+  | "heap";
 export type Box = { x: number; y: number; width: number; height: number };
 export function overlaps(a: Box, b: Box) {
   return (
@@ -36,6 +41,8 @@ export function verifyScene(
   });
   const tree = kind === "tree";
   const hash = kind === "hash";
+  const heap = kind === "heap";
+  const treeLike = tree || heap;
   expect(scene.height).toBeLessThanOrEqual(220);
   for (const pointer of scene.pointers)
     for (const name of pointer.name.split(",")) {
@@ -65,10 +72,56 @@ export function verifyScene(
   } else if (hash) {
     throw new Error("哈希场景缺少公式条");
   }
+  if (heap) {
+    const order = frame.heapOrder ?? [];
+    if (order.length !== frame.items.length)
+      throw new Error("堆数组顺序没有覆盖全部节点");
+    if (new Set(order).size !== order.length)
+      throw new Error("堆数组顺序包含重复节点");
+    const valueById = new Map(
+      frame.items.map((item) => [item.id, item.value] as const),
+    );
+    if (scene.heapCells.length !== order.length)
+      throw new Error("堆数组格数量与节点数不一致");
+    const boxes = scene.heapCells.map((cell) => ({
+      x: cell.x,
+      y: cell.y,
+      width: cell.width,
+      height: cell.height,
+    }));
+    scene.heapCells.forEach((cell, index) => {
+      if (
+        cell.index !== index ||
+        cell.id !== order[index] ||
+        cell.value !== valueById.get(cell.id)
+      )
+        throw new Error("堆数组格与 heapOrder 绑定错误");
+      if (
+        cell.x < 0 ||
+        cell.y < 0 ||
+        cell.x + cell.width > scene.width ||
+        cell.y + cell.height > scene.height
+      )
+        throw new Error("堆数组格越界");
+      for (let other = index + 1; other < boxes.length; other++)
+        if (overlaps(boxes[index], boxes[other]))
+          throw new Error("堆数组格相交");
+      for (const node of scene.nodes)
+        if (
+          overlaps(boxes[index], {
+            x: node.x.at(-1)!,
+            y: node.y.at(-1)!,
+            width: node.width,
+            height: node.height,
+          })
+        )
+          throw new Error("堆数组格压住树节点");
+    });
+  }
   for (let tick = 0; tick <= 100; tick++) {
     const t = tick / 100;
-    // 树与哈希的动画会让已有节点滑动，中间时刻允许短暂交叠，只检查静态帧与终点。
-    const checkCollisions = (!tree && !hash) || !previous || t === 1;
+    // 树、堆与哈希的动画会让已有节点滑动，中间时刻允许短暂交叠，只检查静态帧与终点。
+    const checkCollisions = (!treeLike && !hash) || !previous || t === 1;
     const nodes = scene.nodes.map((node) => ({
       ...node,
       x: sampleTrack(node.x, scene.times, t),
@@ -155,7 +208,7 @@ export function verifyScene(
           throw new Error("哈希链端点没有连接相邻键节点");
         continue;
       }
-      if (tree) {
+      if (treeLike) {
         if (link.arrow || link.geometry !== "tree")
           throw new Error("树边应为无箭头的父子连线");
         if (
