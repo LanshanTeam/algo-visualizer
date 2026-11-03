@@ -1,8 +1,8 @@
 export type Track = { x: number[]; y: number[] };
 export type Box = { x: number; y: number; width: number; height: number };
 export type Tone = "idle" | "active" | "pivot" | "settled";
-/** 连线走向：next 为链表，tree 为二叉树的父子边。 */
-export type LinkGeometry = "next" | "tree";
+/** 连线走向：next 为链表，tree 为二叉树的父子边，hash 为同桶冲突链。 */
+export type LinkGeometry = "next" | "tree" | "hash";
 export type SceneLink = {
   id: string;
   geometry: LinkGeometry;
@@ -36,6 +36,27 @@ export type SceneBadge = {
   placement: "upper-right" | "upper-left";
 };
 
+/** 哈希表的一个桶格；head 是链头节点左边缘中点的轨迹。 */
+export type SceneBucket = {
+  index: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  active: boolean;
+  head?: { x: number[]; y: number[] };
+};
+
+/** 哈希表顶部的除留余数法公式条。 */
+export type SceneFormula = {
+  text: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  active: boolean;
+};
+
 // 渲染和测试使用同一插值函数；全部几何由一个 0..1 时钟驱动。
 export function sampleTrack(
   values: number[],
@@ -61,6 +82,15 @@ export function connectionPathAt(
     const bx = sampleTrack(link.to.x, times, progress) + link.targetWidth / 2;
     const by = sampleTrack(link.to.y, times, progress);
     return `M ${ax} ${ay} L ${bx} ${by}`;
+  }
+  // 哈希链从源节点右边缘中点直连目标左边缘前 6 单位。
+  if (link.geometry === "hash") {
+    const ax = sampleTrack(link.from.x, times, progress) + link.sourceWidth;
+    const ay =
+      sampleTrack(link.from.y, times, progress) + link.sourceHeight / 2;
+    const bx = sampleTrack(link.to.x, times, progress);
+    const by = sampleTrack(link.to.y, times, progress) + link.targetHeight / 2;
+    return `M ${ax} ${ay} L ${bx - 6} ${by}`;
   }
   const ax = sampleTrack(link.from.x, times, progress) + link.sourceWidth;
   const ay = sampleTrack(link.from.y, times, progress) + link.portY;

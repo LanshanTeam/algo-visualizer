@@ -5,9 +5,10 @@ import {
   createAnimationScene,
   sampleTrack,
 } from "./animation-scene";
+import { hashChainCapacityOf } from "./hash-layout";
 import { treeDepthOf } from "./tree-layout";
 
-export type SceneKind = "array" | "linked-list" | "tree";
+export type SceneKind = "array" | "linked-list" | "tree" | "hash";
 export type Box = { x: number; y: number; width: number; height: number };
 export function overlaps(a: Box, b: Box) {
   return (
@@ -23,6 +24,7 @@ export function verifyScene(
   kind: SceneKind,
   capacity: number,
   treeDepth = 0,
+  hashChainCapacity = 0,
 ) {
   const scene = createAnimationScene({
     frame,
@@ -30,8 +32,10 @@ export function verifyScene(
     kind,
     capacity,
     treeDepth,
+    hashChainCapacity,
   });
   const tree = kind === "tree";
+  const hash = kind === "hash";
   expect(scene.height).toBeLessThanOrEqual(220);
   for (const pointer of scene.pointers)
     for (const name of pointer.name.split(",")) {
@@ -48,6 +52,19 @@ export function verifyScene(
     )
       throw new Error("目标值徽章缺少目标值");
   }
+  if (scene.formula) {
+    const formula = scene.formula;
+    if (
+      formula.x < 0 ||
+      formula.y < 0 ||
+      formula.x + formula.width > scene.width ||
+      formula.y + formula.height > scene.height
+    )
+      throw new Error("哈希公式条越界");
+    if (!hash) throw new Error("只有哈希场景应显示公式条");
+  } else if (hash) {
+    throw new Error("哈希场景缺少公式条");
+  }
   for (let tick = 0; tick <= 100; tick++) {
     const t = tick / 100;
     // 树的创建动画会让已有节点滑动，中间时刻允许短暂交叠，只检查静态帧与终点。
@@ -57,6 +74,10 @@ export function verifyScene(
       x: sampleTrack(node.x, scene.times, t),
       y: sampleTrack(node.y, scene.times, t),
     }));
+    if (scene.formula)
+      for (const node of nodes)
+        if (overlaps(node, scene.formula))
+          throw new Error(`${frame.anchor} 公式条压住节点 ${node.id}`);
     const labels = scene.pointers.map((pointer) => ({
       x: sampleTrack(pointer.x, scene.times, t) - pointer.width / 2,
       y:
@@ -122,6 +143,18 @@ export function verifyScene(
         .match(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi)!
         .map(Number);
       const [ex, ey] = numbers.slice(-2);
+      if (hash) {
+        if (!link.arrow || link.geometry !== "hash")
+          throw new Error("哈希链应为带箭头的水平连线");
+        if (
+          Math.abs(numbers[0] - (a.x + a.width)) > 1e-6 ||
+          Math.abs(numbers[1] - (a.y + a.height / 2)) > 1e-6 ||
+          Math.abs(ex - (b.x - 6)) > 1e-6 ||
+          Math.abs(ey - (b.y + b.height / 2)) > 1e-6
+        )
+          throw new Error("哈希链端点没有连接相邻键节点");
+        continue;
+      }
       if (tree) {
         if (link.arrow || link.geometry !== "tree")
           throw new Error("树边应为无箭头的父子连线");
@@ -216,11 +249,14 @@ export function verifyTrace(frames: Frame[], kind: SceneKind) {
   const capacity = Math.max(...frames.map((frame) => frame.items.length));
   const treeDepth =
     kind === "tree" ? Math.max(...frames.map(treeDepthOf)) : 0;
+  const hashChainCapacity =
+    kind === "hash" ? Math.max(...frames.map(hashChainCapacityOf)) : 0;
   const first = createAnimationScene({
     frame: frames[0],
     kind,
     capacity,
     treeDepth,
+    hashChainCapacity,
   });
   for (let i = 0; i < frames.length; i++) {
     const scene = verifyScene(
@@ -229,11 +265,26 @@ export function verifyTrace(frames: Frame[], kind: SceneKind) {
       kind,
       capacity,
       treeDepth,
+      hashChainCapacity,
     );
     expect([scene.width, scene.height]).toEqual([first.width, first.height]);
     if (i > 0) {
-      verifyScene(frames[i], frames[i - 1], kind, capacity, treeDepth);
-      verifyScene(frames[i - 1], frames[i], kind, capacity, treeDepth);
+      verifyScene(
+        frames[i],
+        frames[i - 1],
+        kind,
+        capacity,
+        treeDepth,
+        hashChainCapacity,
+      );
+      verifyScene(
+        frames[i - 1],
+        frames[i],
+        kind,
+        capacity,
+        treeDepth,
+        hashChainCapacity,
+      );
     }
   }
 }

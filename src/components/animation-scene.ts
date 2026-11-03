@@ -3,9 +3,12 @@ import {
   overlaps,
   type Box,
   type SceneBadge,
+  type SceneBucket,
+  type SceneFormula,
   type SceneLink,
   type Tone,
 } from "./scene-geometry";
+import { createHashLayout } from "./hash-layout";
 import { createSceneLayout } from "./scene-layout";
 import { createTreeLayout } from "./tree-layout";
 
@@ -20,13 +23,17 @@ export function createAnimationScene({
   kind,
   capacity,
   treeDepth = 0,
+  hashChainCapacity = 0,
 }: {
   frame: Frame;
   previous?: Frame;
   kind: ImplementedSceneKind;
   capacity: number;
   treeDepth?: number;
+  hashChainCapacity?: number;
 }) {
+  if (kind === "hash")
+    return createHashScene({ frame, previous, chainCapacity: hashChainCapacity });
   if (kind === "tree")
     return createTreeScene({ frame, previous, capacity, treeDepth });
   const linked = kind === "linked-list";
@@ -201,6 +208,8 @@ export function createAnimationScene({
     indices,
     links,
     tails,
+    buckets: [],
+    formula: undefined,
     hasMotion,
     range:
       !linked &&
@@ -235,6 +244,141 @@ export function createAnimationScene({
         : undefined,
   };
 }
+function createHashScene({
+  frame,
+  previous,
+  chainCapacity,
+}: {
+  frame: Frame;
+  previous?: Frame;
+  chainCapacity: number;
+}) {
+  const layout = createHashLayout({
+    frame,
+    previous,
+    chainCapacity,
+  });
+  const indexOf = (id: number) =>
+    frame.items.findIndex((item) => item.id === id);
+  const nodes = frame.items.map((item, index) => {
+    const tone: Tone = frame.active.includes(index)
+      ? "pivot"
+      : frame.settled.includes(index)
+        ? "active"
+        : "idle";
+    const fontSize = Math.abs(item.value) > 99 ? 10 : 11;
+    return {
+      ...item,
+      ...layout.track(item.id),
+      width: layout.nodeWidth,
+      height: layout.nodeHeight,
+      tone,
+      muted: false,
+      entering: !!previous && !previous.items.some((old) => old.id === item.id),
+      valueX: layout.nodeWidth / 2,
+      valueY: layout.nodeHeight / 2 + fontSize * 0.35,
+      fontSize,
+    };
+  });
+  const links: SceneLink[] = (frame.links ?? [])
+    .filter(([from, to]) => indexOf(from) >= 0 && indexOf(to) >= 0)
+    .map(([from, to]) => {
+      const child = indexOf(to);
+      return {
+        id: `${from}-${to}`,
+        geometry: "hash",
+        sourceHeight: layout.nodeHeight,
+        arrow: true,
+        highlighted:
+          child >= 0 &&
+          (frame.active.includes(child) || frame.settled.includes(child)),
+        obstacles: [],
+        from: layout.track(from),
+        to: layout.track(to),
+        sourceWidth: layout.nodeWidth,
+        targetWidth: layout.nodeWidth,
+        targetHeight: layout.nodeHeight,
+        portY: layout.nodeHeight / 2,
+        existed:
+          previous?.links?.some(
+            (link) => link[0] === from && link[1] === to,
+          ) ?? true,
+      };
+    });
+  const heads = frame.bucketHeads ?? [];
+  const buckets: SceneBucket[] = Array.from(
+    { length: 7 },
+    (_, bucket) => {
+      const headId = heads[bucket];
+      const hasHead =
+        typeof headId === "number" &&
+        frame.items.some((item) => item.id === headId);
+      const owner = hasHead ? layout.track(headId) : undefined;
+      return {
+        index: bucket,
+        x: layout.bucketX,
+        y: layout.bucketRowY(bucket),
+        width: layout.bucketWidth,
+        height: layout.bucketHeight,
+        active: frame.activeBuckets?.includes(bucket) ?? false,
+        head: owner
+          ? {
+              x: owner.x,
+              y: owner.y.map((y) => y + layout.nodeHeight / 2),
+            }
+          : undefined,
+      };
+    },
+  );
+  const key = Number(frame.variables.key);
+  const bucket = Number(frame.variables.bucket);
+  const calculated =
+    frame.variables.key !== undefined &&
+    frame.variables.bucket !== undefined &&
+    Number.isInteger(key) &&
+    Number.isInteger(bucket) &&
+    bucket >= 0 &&
+    bucket < 7;
+  const formula: SceneFormula = {
+    text: calculated
+      ? `h(${key}) = ((${key} % 7) + 7) % 7 = ${bucket}`
+      : "除留余数法  h(key) = ((key % 7) + 7) % 7",
+    ...layout.formula,
+    active: calculated,
+  };
+  const hasMotion =
+    !!previous &&
+    (nodes.some(
+      (node) =>
+        node.entering || new Set(node.x).size > 1 || new Set(node.y).size > 1,
+    ) ||
+      previous.items.some(
+        (old) => !frame.items.some((item) => item.id === old.id),
+      ) ||
+      JSON.stringify(previous.links) !== JSON.stringify(frame.links) ||
+      JSON.stringify(previous.bucketHeads) !==
+        JSON.stringify(frame.bucketHeads));
+  return {
+    width: layout.width,
+    height: layout.height,
+    times: layout.times,
+    linked: false,
+    nodes,
+    pointers: [],
+    badges: [],
+    indices: [],
+    links,
+    tails: [],
+    buckets,
+    formula,
+    hasMotion,
+    range: undefined,
+    slots: [],
+    empty: undefined,
+    nullHead: undefined,
+  };
+}
+
 function createTreeScene({
   frame,
   previous,
@@ -376,6 +520,8 @@ function createTreeScene({
     indices: [],
     links,
     tails: [],
+    buckets: [],
+    formula: undefined,
     hasMotion,
     range: undefined,
     slots: [],
