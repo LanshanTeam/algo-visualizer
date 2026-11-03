@@ -1,9 +1,6 @@
-import { useId, useLayoutEffect, useMemo, useRef } from "react";
+import { useId, useMemo } from "react";
 import {
   AnimatePresence,
-  animate,
-  useMotionValue,
-  useReducedMotion,
 } from "motion/react";
 import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 import { createAnimationScene } from "./animation-scene";
@@ -15,6 +12,7 @@ import {
   ScenePointer,
   SceneTail,
 } from "./canvas-primitives";
+import { useAnimationClock } from "./workspace/use-animation-clock";
 
 export function AnimationCanvas({
   frame,
@@ -33,7 +31,6 @@ export function AnimationCanvas({
   paused?: boolean;
   onAnimatingChange?: (active: boolean) => void;
 }) {
-  const reduced = useReducedMotion();
   const arrowId = useId().replace(/:/g, "");
   const scene = useMemo(
     () =>
@@ -45,44 +42,14 @@ export function AnimationCanvas({
       }),
     [frame, previous, linked, capacity],
   );
-  const progress = useMotionValue(1);
-  const last = useRef<{ frame?: Frame; previous?: Frame }>({});
-  useLayoutEffect(() => {
-    const changed =
-      last.current.frame !== frame || last.current.previous !== previous;
-    last.current = { frame, previous };
-    if (reduced || !scene.hasMotion) {
-      progress.set(1);
-      onAnimatingChange?.(false);
-      return;
-    }
-    if (changed) progress.set(0);
-    const remaining = 1 - progress.get();
-    if (remaining <= 0) {
-      onAnimatingChange?.(false);
-      return;
-    }
-    onAnimatingChange?.(true);
-    if (paused) return;
-    const controls = animate(progress, 1, {
-      duration: duration * remaining,
-      ease: "linear",
-      onComplete: () => onAnimatingChange?.(false),
-    });
-    return () => {
-      controls.stop();
-      onAnimatingChange?.(false);
-    };
-  }, [
+  const progress = useAnimationClock({
     frame,
     previous,
+    hasMotion: scene.hasMotion,
     duration,
     paused,
-    reduced,
-    scene.hasMotion,
-    progress,
     onAnimatingChange,
-  ]);
+  });
 
   return (
     <ScrollArea className="w-full">

@@ -37,6 +37,7 @@ export interface ControlSchema {
   defaultValues: number[];
   /** 数据规模上限，默认 12。 */
   limit?: number;
+  randomValues?: () => number[];
   operations?: readonly { id: string; label: string }[];
   index?: IndexControl;
   value?: { label: string; onlyFor?: readonly string[] };

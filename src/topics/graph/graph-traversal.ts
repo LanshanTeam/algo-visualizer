@@ -69,7 +69,7 @@ function graphTrace(start: number, operation: "bfs" | "dfs"): Frame[] {
 export const graphTraversal: ReadyTopic = {
   id: "graph-traversal", group: "graph", title: "图的遍历", badge: "O(V+E)",
   summary: "在二维图上演示 BFS 与 DFS 的访问顺序、队列和递归回溯。", status: "ready", scene: "graph", icon: Network,
-  controls: { dataLabel: "起始顶点（0=A，5=F）", defaultValues: [0], limit: 1, operations: [{ id: "bfs", label: "BFS 广度优先" }, { id: "dfs", label: "DFS 深度优先" }] },
+  controls: { dataLabel: "起始顶点（0=A，5=F）", defaultValues: [0], limit: 1, randomValues: () => [Math.floor(Math.random() * 6)], operations: [{ id: "bfs", label: "BFS 广度优先" }, { id: "dfs", label: "DFS 深度优先" }] },
   legend: [{ label: "当前访问", tone: "active" }, { label: "已完成", tone: "settled" }, { label: "未访问", tone: "idle" }],
   theory: [
     { title: "BFS", body: "BFS 使用队列逐层扩展，先访问距离起点近的顶点，适合求无权图的最短边数。" },
