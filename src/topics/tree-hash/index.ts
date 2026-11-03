@@ -1,26 +1,19 @@
-import { GitFork, Workflow } from "lucide-react";
+import { GitFork } from "lucide-react";
 import { plannedTopic, type TopicDefinition } from "../types";
 import { binaryTree } from "./binary-tree";
 import { bst } from "./bst";
 import { hashTable } from "./hash-table";
+import { heap } from "./heap";
 
 /**
  * 树与散列专题：哈希表、二叉树、BST、堆、并查集。
- * 哈希表、二叉树与 BST 已接入；堆与并查集仍待实现。
+ * 哈希表、二叉树、BST 与堆已接入；并查集仍待实现。
  */
 export const treeHashTopics: TopicDefinition[] = [
   hashTable,
   binaryTree,
   bst,
-  plannedTopic({
-    id: "heap",
-    group: "tree-hash",
-    title: "二叉堆",
-    badge: "O(log n)",
-    summary: "完全二叉树的上浮与下沉，是优先队列的实现基础。",
-    icon: Workflow,
-    scene: "tree",
-  }),
+  heap,
   plannedTopic({
     id: "union-find",
     group: "tree-hash",
