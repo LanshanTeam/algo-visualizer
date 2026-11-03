@@ -6,10 +6,19 @@ export type Language = "C" | "C++" | "Python" | "Go" | "Java" | "Rust";
  * 动画画布支持的布局模型。
  * 新增布局时同步扩展 `ImplementedSceneKind`，否则专题无法标记为 ready。
  */
-export type SceneKind = "array" | "linked-list" | "graph" | "tree";
+export type SceneKind =
+  | "array"
+  | "linked-list"
+  | "graph"
+  | "tree"
+  | "hash";
 
 /** 渲染器当前真正实现的布局。 */
-export type ImplementedSceneKind = "array" | "linked-list" | "tree";
+export type ImplementedSceneKind =
+  | "array"
+  | "linked-list"
+  | "tree"
+  | "hash";
 
 export interface Item {
   id: number;
@@ -39,6 +48,10 @@ export interface Frame {
   stack: string[];
   /** 层序遍历队列，非空时工作台会展示。 */
   queue?: string[];
+  /** 哈希表桶头；下标为桶号，值为链头节点 id 或 null。 */
+  bucketHeads?: (number | null)[];
+  /** 当前正在检查/高亮的桶号。 */
+  activeBuckets?: number[];
   /**
    * 有向连线，元素为 `[fromId, toId]`。
    * 树布局用可选的第三项标记左/右孩子；缺省时按同一父节点的连线顺序回退。
