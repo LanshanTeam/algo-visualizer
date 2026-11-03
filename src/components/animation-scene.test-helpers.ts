@@ -67,8 +67,8 @@ export function verifyScene(
   }
   for (let tick = 0; tick <= 100; tick++) {
     const t = tick / 100;
-    // 树的创建动画会让已有节点滑动，中间时刻允许短暂交叠，只检查静态帧与终点。
-    const checkCollisions = !tree || !previous || t === 1;
+    // 树与哈希的动画会让已有节点滑动，中间时刻允许短暂交叠，只检查静态帧与终点。
+    const checkCollisions = (!tree && !hash) || !previous || t === 1;
     const nodes = scene.nodes.map((node) => ({
       ...node,
       x: sampleTrack(node.x, scene.times, t),
