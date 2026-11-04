@@ -1,4 +1,4 @@
-import { ArrowDownUp } from "lucide-react";
+import { ArrowDownUp, BookOpen, Gauge, ScanLine, TriangleAlert } from "lucide-react";
 import { parseCode } from "../../core/code";
 import type { Frame, Item } from "../../core/types";
 import type { ReadyTopic } from "../types";
@@ -15,9 +15,49 @@ export const mergeSort: ReadyTopic = {
     { label: "排序完成", tone: "settled" },
   ],
   theory: [
-    { title: "分治与调用栈", body: "将闭区间 [low, high] 拆分成左右两半，先递归排序左半，再排序右半，长度不超过 1 时返回。调用栈展示当前尚未完成的区间。" },
-    { title: "辅助数组与稳定合并", body: "比较两个有序区间的首项，将较小项逐个写入辅助数组；相等时优先取左侧，保持稳定。某侧耗尽后继续取另一侧，区间合并完成才整体写回。画布清空已写回的辅助槽以突出下一次合并。" },
-    { title: "复杂度", body: "最好、平均、最坏时间均为 O(n log n)。辅助数组 O(n)，递归栈 O(log n)，总额外空间 O(n)；此实现稳定但不是原地排序。可视化快照不计入算法空间。" },
+    {
+      title: "核心思路",
+      icon: BookOpen,
+      body: "归并排序采用分治策略。对长度大于 1 的区间，将其划分为两个连续且不重叠的子区间，递归排序后再合并；长度为 0 或 1 的区间作为递归基例。合并使用辅助数组暂存结果，再写回原区间。",
+      items: [
+        "输入区间为 [low, high]，长度为 high - low + 1。",
+        "划分保持原元素集合不变；左右子区间并集等于原区间，交集为空。",
+        "每层递归将问题规模近似减半，直至到达基例。",
+      ],
+    },
+    {
+      title: "递归关系与合并不变量",
+      icon: ScanLine,
+      body: "本实现取 mid = floor((low + high) / 2)，递归处理 [low, mid] 与 [mid + 1, high]。合并时，i 和 j 分别指向左右有序子区间中首个未处理元素，k 指向辅助数组中的下一个写入位置。",
+      items: [
+        "合并不变量：辅助区间 [low, k) 已按非递减顺序排列，且由两个子区间中最小的 k - low 个元素组成。",
+        "当 i <= mid 且 j <= high 时比较 a[i] 与 a[j]；一侧耗尽后，顺序复制另一侧的剩余元素。",
+        "仅在 [low, high] 全部写入辅助数组后执行整体写回；本实现写回后清空对应辅助槽位。",
+      ],
+    },
+    {
+      title: "复杂度",
+      icon: Gauge,
+      body: "递归树约有 log n 层，每层合并的总处理量为 n，因此各层工作量之和为 O(n log n)。递归深度为 O(log n)；辅助数组容量与输入长度成正比。",
+      rows: [
+        { label: "最好时间", value: "O(n log n)" },
+        { label: "平均时间", value: "O(n log n)" },
+        { label: "最坏时间", value: "O(n log n)" },
+        { label: "辅助数组", value: "O(n)" },
+        { label: "递归调用栈", value: "O(log n)" },
+        { label: "总额外空间", value: "O(n)" },
+      ],
+    },
+    {
+      title: "易错点与性质",
+      icon: TriangleAlert,
+      body: "正确性依赖两项条件：划分完整覆盖原区间且子区间互不重叠；合并阶段按序读取两个已排序子区间的全部元素。",
+      items: [
+        "左右边界必须是 [low, mid] 和 [mid + 1, high]；边界偏移会造成元素遗漏或重复处理。",
+        "两侧键值相等时先取左侧，保留相等元素的原始相对次序，因此本实现稳定。",
+        "写回前不得清空或覆盖仍需读取的辅助值；使用 O(n) 辅助空间，因此不是原地排序。",
+      ],
+    },
   ],
   trace: ({ values }) => mergeSortTrace(values),
   code: language => parseCode(templates[language]),
