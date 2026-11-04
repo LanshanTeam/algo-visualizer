@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import type { ReactNode } from "react";
 import { Shuffle } from "lucide-react";
 import { randomValues } from "../../core/random";
@@ -16,6 +17,8 @@ import {
 } from "../ui/select";
 import { Separator } from "../ui/separator";
 import { AnimationCanvas } from "../animation-canvas";
+import { hashChainCapacityOf } from "../hash-layout";
+import { treeDepthOf } from "../tree-layout";
 import { GraphAnimationCanvas } from "../graph-animation-canvas";
 import { IconButton } from "./icon-button";
 import { PlaybackBar } from "./playback-bar";
@@ -85,6 +88,8 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
     setIndex,
     value,
     setValue,
+    value2,
+    setValue2,
     frames,
     previousStep,
     traceVersion,
@@ -96,10 +101,25 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
     frame,
     capacity,
     showValue,
+    showValue2,
     fieldCount,
     load,
     apply,
   } = trace;
+  const treeDepth = useMemo(
+    () =>
+      topic.scene === "tree" && frames.length
+        ? Math.max(...frames.map(treeDepthOf))
+        : 0,
+    [topic.scene, frames],
+  );
+  const hashChainCapacity = useMemo(
+    () =>
+      topic.scene === "hash" && frames.length
+        ? Math.max(...frames.map(hashChainCapacityOf))
+        : 0,
+    [topic.scene, frames],
+  );
 
   return (
     <Card
@@ -127,6 +147,7 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
             <Button variant="outline" onClick={apply}>
               应用
             </Button>
+            {controls.randomizable !== false && (
             <IconButton
               label="随机数据"
               onClick={() => {
@@ -137,6 +158,7 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
             >
               <Shuffle />
             </IconButton>
+            )}
           </div>
         </div>
         </div>
@@ -194,6 +216,23 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
                 }}
               />
             )}
+            {showValue2 && controls.value2 && (
+              <div className="space-y-2">
+                <Label htmlFor="node-value-b">{controls.value2.label}</Label>
+                <Input
+                  id="node-value-b"
+                  type="number"
+                  min={-999}
+                  max={999}
+                  value={value2}
+                  onChange={(event) => {
+                    const next = Number(event.target.value);
+                    setValue2(next);
+                    load(values, operation, index, value, next);
+                  }}
+                />
+              </div>
+            )}
           </div>
         )}
         {error && (
@@ -216,7 +255,9 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
               key={traceVersion}
               frame={frame}
               previous={previousStep === null ? undefined : frames[previousStep]}
-              linked={linked}
+              kind={topic.scene}
+              treeDepth={treeDepth}
+              hashChainCapacity={hashChainCapacity}
               capacity={capacity}
               duration={1 / speed}
               paused={!playing && stepMode === "automatic"}
@@ -244,6 +285,12 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
                   {entry}
                 </Badge>
               ))}
+            </div>
+          )}
+          {!graph && frame.queue && frame.queue.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 text-xs" aria-label="队列">
+              <span className="text-muted-foreground">队列</span>
+              {frame.queue.map((entry, index) => <Badge variant="secondary" className="font-mono" key={index}>{entry}</Badge>)}
             </div>
           )}
         </ArrayStage>

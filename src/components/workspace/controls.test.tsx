@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import { treeHashTopics } from "../../topics/tree-hash";
 import { graphTraversal } from "../../topics/graph/graph-traversal";
 import { binarySearch } from "../../topics/sorting-searching/binary-search";
 import type { ReadyTopic } from "../../topics/types";
@@ -22,6 +23,17 @@ function WorkspaceFrame({ topic, frameIndex = 0 }: { topic: ReadyTopic; frameInd
 }
 
 describe("declaration-driven workspace controls", () => {
+  it("树与散列专题首帧使用对应场景，保留随机按钮声明", () => {
+    for (const topic of treeHashTopics) {
+      if (topic.status !== "ready") continue;
+      const html = renderToStaticMarkup(<WorkspaceFrame topic={topic} />);
+      expect(html).toContain("data-animation-stage");
+      expect(html).not.toContain("data-graph-tree-stage");
+      expect(html).not.toContain("data-array-stage");
+      expect(html).toContain('id="operation"');
+      expect(html.includes('aria-label="随机数据"')).toBe(topic.controls.randomizable !== false);
+    }
+  });
   it("为真实图专题保留操作选择器和独立画布", () => {
     const html = renderToStaticMarkup(<WorkspaceFrame topic={graphTraversal} />);
     expect(html).not.toContain("data-array-controls");

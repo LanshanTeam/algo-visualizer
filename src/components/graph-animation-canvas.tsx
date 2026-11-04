@@ -45,7 +45,7 @@ export function GraphAnimationCanvas({ frame, previous, duration, paused, onAnim
           {frame.queue.length === 0 ? (
             <Badge variant="secondary" className="font-mono">空</Badge>
           ) : frame.queue.map((id) => (
-            <Badge variant="secondary" className="font-mono" key={id}>{String.fromCharCode(65 + id)}</Badge>
+            <Badge variant="secondary" className="font-mono" key={id}>{String.fromCharCode(65 + Number(id))}</Badge>
           ))}
         </div>
       )}

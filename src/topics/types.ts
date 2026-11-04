@@ -35,14 +35,33 @@ export interface ControlSchema {
   /** 数据输入框的标签，例如「初始链表」「数组」。 */
   dataLabel: string;
   defaultValues: number[];
+  /** 数据输入框的初始文本；缺省用 defaultValues 拼接。 */
+  defaultInput?: string;
+  /** 自定义解析；空位可用 NaN 等哨兵表示，共享 parseValues 不受影响。 */
+  parseInput?: (text: string, limit?: number) => number[];
   /** 数据规模上限，默认 12。 */
   limit?: number;
+  /** 初始选中的操作；缺省为 operations 的第一项。 */
+  defaultOperation?: string;
+  /** 是否显示随机数据按钮，默认显示。 */
+  randomizable?: boolean;
   /** 随机数据保持升序；手工输入仍由专题校验，不自动排序。 */
   sorted?: boolean;
   randomValues?: () => number[];
   operations?: readonly { id: string; label: string }[];
   index?: IndexControl;
-  value?: { label: string; onlyFor?: readonly string[] };
+  value?: {
+    label: string;
+    onlyFor?: readonly string[];
+    /** 目标值输入框与首帧 trace 的初始值；缺省为 31。 */
+    defaultValue?: number;
+  };
+  /** 第二个元素输入；并查集的合并与连通查询使用。 */
+  value2?: {
+    label: string;
+    onlyFor?: readonly string[];
+    defaultValue?: number;
+  };
 }
 
 export interface TheoryBlock {

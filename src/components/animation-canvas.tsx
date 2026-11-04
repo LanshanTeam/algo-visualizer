@@ -4,44 +4,58 @@ import {
 } from "motion/react";
 import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 import { createAnimationScene } from "./animation-scene";
-import type { Frame } from "../core/types";
+import type { Frame, ImplementedSceneKind } from "../core/types";
 import {
   Annotation,
+  SceneBadge,
+  SceneBucket,
   AuxiliaryNode,
   SceneEdge,
+  SceneFormula,
+  SceneHeapCell,
   SceneNode,
   ScenePointer,
   SceneTail,
+  SceneUnionCell,
+  SceneUnionRowLabel,
 } from "./canvas-primitives";
 import { useAnimationClock } from "./workspace/use-animation-clock";
 
 export function AnimationCanvas({
   frame,
   previous,
-  linked,
+  kind,
   capacity,
+  treeDepth = 0,
+  hashChainCapacity = 0,
   duration,
   paused = false,
   onAnimatingChange,
 }: {
   frame: Frame;
   previous?: Frame;
-  linked: boolean;
+  kind: ImplementedSceneKind;
   capacity: number;
+  treeDepth?: number;
+  hashChainCapacity?: number;
   duration: number;
   paused?: boolean;
   onAnimatingChange?: (active: boolean) => void;
 }) {
+  const linked = kind === "linked-list";
+  const array = kind === "array";
   const arrowId = useId().replace(/:/g, "");
   const scene = useMemo(
     () =>
       createAnimationScene({
         frame,
         previous,
-        kind: linked ? "linked-list" : "array",
+        kind,
         capacity,
+        treeDepth,
+        hashChainCapacity,
       }),
-    [frame, previous, linked, capacity],
+    [frame, previous, kind, capacity, treeDepth, hashChainCapacity],
   );
   const progress = useAnimationClock({
     frame,
@@ -53,22 +67,34 @@ export function AnimationCanvas({
   });
 
   return (
-    <ScrollArea className={linked ? "w-full" : "w-full [&_[data-radix-scroll-area-viewport]>div]:!block"}>
+    <ScrollArea className={array ? "w-full [&_[data-radix-scroll-area-viewport]>div]:!block" : "w-full"}>
       <svg
         data-animation-stage
         viewBox={`0 0 ${scene.width} ${scene.height}`}
         width={scene.width}
         height={scene.height}
         preserveAspectRatio={linked ? "xMinYMin meet" : "xMidYMid meet"}
-        className={linked ? "block h-auto w-full min-w-[430px] sm:min-w-0" : "mx-auto block h-auto min-w-0"}
+        className={array ? "mx-auto block h-auto min-w-0" : "block h-auto w-full min-w-[430px] sm:min-w-0"}
         // Ordinary arrays fit the viewport, including their boundary pointers.
         // Only long inputs retain an enlarged minimum width and internal scrolling.
-        style={linked
-          ? { minWidth: capacity > 8 ? scene.width : undefined }
-          : { width: "100%", minWidth: capacity > 8 ? scene.width * 1.2 : undefined, maxWidth: scene.width * 1.2 }}
+        style={array
+          ? { width: "100%", minWidth: capacity > 8 ? scene.width * 1.2 : undefined, maxWidth: scene.width * 1.2 }
+          : { minWidth: ["hash", "heap", "union-find"].includes(kind)
+              ? scene.width > 430 ? scene.width : undefined
+              : capacity > 8 ? scene.width : undefined }}
         role="img"
         aria-label={
-          linked ? "链表节点及 next 指针" : "数组分区、比较与交换动画"
+          kind === "linked-list"
+            ? "链表节点及 next 指针"
+            : kind === "tree"
+              ? "二叉树节点与父子边"
+              : kind === "hash"
+                ? "哈希表桶、冲突链与除留余数法公式"
+                : kind === "heap"
+                  ? "二叉堆的完全二叉树与数组表示"
+                  : kind === "union-find"
+                    ? "并查集森林与 parent、rank 数组"
+                    : "数组分区、比较与交换动画"
         }
       >
         <defs>
@@ -84,6 +110,7 @@ export function AnimationCanvas({
             <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" />
           </marker>
         </defs>
+        {scene.formula && <SceneFormula formula={scene.formula} />}
         {scene.range && (
           <rect
             {...scene.range}
@@ -138,6 +165,15 @@ export function AnimationCanvas({
             </text>
           </Annotation>
         ))}
+        {scene.buckets.map((bucket) => (
+          <SceneBucket
+            key={bucket.index}
+            bucket={bucket}
+            progress={progress}
+            times={scene.times}
+            arrowId={arrowId}
+          />
+        ))}
         <AnimatePresence initial={false}>
           {scene.links.map((link) => (
             <SceneEdge
@@ -154,12 +190,26 @@ export function AnimationCanvas({
             <SceneNode
               key={node.id}
               node={node}
-              linked={linked}
+              linked={kind === "linked-list"}
+              circular={
+                kind === "tree" ||
+                kind === "heap" ||
+                kind === "union-find"
+              }
               progress={progress}
               times={scene.times}
             />
           ))}
         </AnimatePresence>
+        {scene.heapCells.map((cell) => (
+          <SceneHeapCell key={cell.id} cell={cell} />
+        ))}
+        {scene.unionColumns.map((column) => (
+          <SceneUnionCell key={column.id} column={column} />
+        ))}
+        {scene.unionRowLabels.map((row) => (
+          <SceneUnionRowLabel key={row.label} row={row} />
+        ))}
         {scene.pointers.map((pointer) => (
           <ScenePointer
             key={pointer.key}
@@ -168,6 +218,16 @@ export function AnimationCanvas({
             times={scene.times}
           />
         ))}
+        <AnimatePresence initial={false}>
+          {scene.badges.map((badge) => (
+            <SceneBadge
+              key={badge.key}
+              badge={badge}
+              progress={progress}
+              times={scene.times}
+            />
+          ))}
+        </AnimatePresence>
         {scene.tails.map((tail) => (
           <SceneTail
             key={tail.id}

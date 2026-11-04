@@ -11,7 +11,7 @@ describe("responsive array display bounds", () => {
       for (const count of [6, 12]) {
         const frame = topic.trace({ values: Array.from({ length: count }, (_, i) => i + 1), operation: "", index: 0, value: 3 })[0];
         const scene = createAnimationScene({ frame, kind: "array", capacity: count });
-        const html = renderToStaticMarkup(<AnimationCanvas frame={frame} linked={false} capacity={count} duration={1} />);
+        const html = renderToStaticMarkup(<AnimationCanvas frame={frame} kind="array" capacity={count} duration={1} />);
         const svg = html.match(/<svg data-animation-stage[^>]*>/)![0];
         expect(html).toContain('[&amp;_[data-radix-scroll-area-viewport]&gt;div]:!block');
         expect(svg).toContain('width:100%');
