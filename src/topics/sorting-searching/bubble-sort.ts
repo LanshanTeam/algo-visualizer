@@ -1,4 +1,4 @@
-import { ArrowDownUp } from "lucide-react";
+import { ArrowDownUp, BookOpen, Gauge, ScanLine, TriangleAlert } from "lucide-react";
 import { parseCode } from "../../core/code";
 import type { Frame } from "../../core/types";
 import type { ReadyTopic } from "../types";
@@ -42,9 +42,47 @@ export const bubbleSort: ReadyTopic = {
   controls: { dataLabel: "数组", defaultValues: [38, 16, 54, 27, 8, 42, 23] },
   legend: [{ label: "相邻比较", tone: "active" }, { label: "未处理", tone: "idle" }, { label: "已归位", tone: "settled" }],
   theory: [
-    { title: "相邻交换", body: "从左到右比较相邻值，仅在左侧严格大于右侧时交换。每轮将剩余区间的最大值送到末尾，下一轮缩短右边界。" },
-    { title: "稳定性", body: "相等元素不交换，因此它们的相对顺序保持不变，冒泡排序是稳定排序。" },
-    { title: "提前退出与复杂度", body: "一轮没有交换即可提前退出，已有序时最好时间 O(n)；平均与最坏时间 O(n²)，额外空间 O(1)。帧快照占用不计入算法空间。" },
+    {
+      title: "核心思路",
+      icon: BookOpen,
+      body: "冒泡排序是基于相邻比较与交换的比较排序。对升序排序，每轮从左向右扫描未排序前缀，比较相邻元素 a[j] 与 a[j + 1]；当且仅当 a[j] > a[j + 1] 时交换。连续交换使本轮扫描过的最大元素移动到当前区间右端。",
+      items: [
+        "设 n 为数组长度，end 为当前未排序区间的右边界；本实现初始 end = n - 1。",
+        "内层下标 j 从 0 扫描到 end - 1，比较范围为 [0, end]。",
+        "一轮结束后，a[end] 已处于最终位置；下一轮将 end 减 1。",
+      ],
+    },
+    {
+      title: "循环不变量与提前终止",
+      icon: ScanLine,
+      body: "第 r 轮开始前，后缀 [end + 1, n) 已按非递减顺序排列，且其中每个元素均不小于前缀 [0, end] 的元素。完成该轮后，不变量扩展至 [end, n)。",
+      items: [
+        "循环条件为 j < end，保证 j + 1 不越过当前右边界。",
+        "本实现用 swapped 记录整轮是否发生交换；只有完整扫描后 swapped 仍为 false，才能判定数组已有序并结束。",
+        "某一次比较没有交换不构成终止条件；后续相邻元素仍可能逆序。",
+      ],
+    },
+    {
+      title: "复杂度",
+      icon: Gauge,
+      body: "未排序区间每轮缩短 1。未提前结束时，比较次数为 (n - 1) + (n - 2) + ... + 1；已有序输入可由交换标志在首轮后终止。",
+      rows: [
+        { label: "最好时间（已有序）", value: "O(n)" },
+        { label: "平均时间", value: "O(n²)" },
+        { label: "最坏时间", value: "O(n²)" },
+        { label: "额外空间", value: "O(1)" },
+      ],
+    },
+    {
+      title: "易错点与性质",
+      icon: TriangleAlert,
+      body: "本实现按升序排序，且只交换严格逆序对；循环边界和比较条件共同决定正确性与稳定性。",
+      items: [
+        "比较上界必须是 j < end；使用 j <= end 会访问 a[end + 1]。",
+        "若交换条件改成 a[j] >= a[j + 1]，相等元素也会交换，稳定性随之丧失。",
+        "本实现原地交换，额外空间为 O(1)；稳定性来自相等元素不交换。",
+      ],
+    },
   ],
   trace: ({ values }) => bubbleSortTrace(values),
   code: (language) => parseCode(templates[language]),
