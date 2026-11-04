@@ -356,7 +356,10 @@ function buildGroupSilently(
 
 function initialState(groups: number[][]) {
   const state = makeState(groups);
-  for (const group of groups) buildGroupSilently(state, group);
+  for (const group of groups) {
+    const ids = group.map((value) => state.idByValue.get(value)!);
+    buildGroupSilently(state, ids);
+  }
   return state;
 }
 

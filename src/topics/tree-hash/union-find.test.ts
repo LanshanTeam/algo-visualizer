@@ -199,6 +199,37 @@ describe("创建", () => {
   });
 });
 
+describe("非连续元素值", () => {
+  const sparse = parseUnionFindInput("{10,20,30}, {40,50}");
+
+  it("查找与连通按节点 id 建森林，与创建最后一帧一致", () => {
+    const created = unionFindTrace(sparse, "create").at(-1)!;
+    expect(parents(created)).toEqual([1, 1, 1, 3, 3]);
+    expect(ranks(created)).toEqual([0, 1, 0, 1, 0]);
+
+    const connected = unionFindTrace(sparse, "connected", 10, 30);
+    expectFrameContract(connected);
+    const answer = connected.at(-1)!;
+    expect(answer.narration).toContain("10 与 30 连通");
+    expect(parents(answer)).toEqual(parents(created));
+
+    const find = unionFindTrace(sparse, "find", 20);
+    expectFrameContract(find);
+    expect(find.at(-1)!.narration).toContain("20 本身是根");
+    expect(parents(find.at(-1)!)).toEqual(parents(created));
+  });
+
+  it("合并跨集合元素时数组长度不变，集合数减少", () => {
+    const frames = unionFindTrace(sparse, "union", 10, 40);
+    expectFrameContract(frames);
+    const last = frames.at(-1)!;
+    expect(last.items).toHaveLength(5);
+    expect(parents(last)).toHaveLength(5);
+    expect(last.variables.sets).toBe(1);
+    expect(last.narration).toContain("10 与 40 连通");
+  });
+});
+
 describe("查找", () => {
   it("3 → 2 → 0，找到根后压缩 3，共 5 帧", () => {
     const frames = unionFindTrace(values, "find", 3);
