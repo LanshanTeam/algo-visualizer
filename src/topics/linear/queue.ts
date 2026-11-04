@@ -11,23 +11,32 @@ const MAX_VALUE = 999;
 /**
  * 顺序队列的演示轨迹。
  * `front` 记录队头所在槽位，出队只移动 front，元素本身不搬家；
- * 因此 rear 走到末端后即使前面有空槽也无法入队，即「假溢出」。
+ * `startFront` 给出初始已空出的槽位数，用来复现 front > 0 且 rear 已到末端的情形。
  */
 export function queueTrace(
   values: number[],
   operation: string,
   value: number,
   capacity = QUEUE_CAPACITY,
+  startFront = 0,
 ): Frame[] {
   if (values.length > capacity)
     throw new Error(`队列容量为 ${capacity}，请减少初始元素。`);
+  if (
+    !Number.isInteger(startFront) ||
+    startFront < 0 ||
+    startFront + values.length > capacity
+  )
+    throw new Error(
+      `初始 front 须为 0 到 ${Math.max(0, capacity - values.length)} 的整数。`,
+    );
   if (
     operation === "enqueue" &&
     (!Number.isInteger(value) || Math.abs(value) > MAX_VALUE)
   )
     throw new Error(`入队值须为 -${MAX_VALUE} 到 ${MAX_VALUE} 的整数。`);
   let items = values.map((item, id) => ({ id, value: item }));
-  let front = 0;
+  let front = startFront;
   const frames: Frame[] = [];
   function emit(
     anchor: string,
@@ -64,7 +73,9 @@ export function queueTrace(
     if (rear + 1 >= capacity) {
       emit(
         "check",
-        `rear + 1 = ${rear + 1} 已到槽位末端：前面虽然空出了槽位，rear 却无法前移，这就是假溢出，需要循环队列才能解决。`,
+        front > 0
+          ? `rear + 1 = ${rear + 1} 已到槽位末端，而 front = ${front} 左侧还空着 ${front} 个槽位。顺序队列的 rear 不会回退，这些空位用不上，这就是假溢出——要靠循环队列把 rear 绕回开头。`
+          : `队列已满：rear + 1 = ${rear + 1} 到达容量 ${capacity}，队尾没有空槽，入队失败。`,
       );
       return frames;
     }
@@ -148,6 +159,10 @@ export const queue: ReadyTopic = {
       { id: "dequeue", label: "出队" },
       { id: "peek", label: "取队头" },
     ],
+    index: {
+      label: "初始 front",
+      max: ({ length }) => Math.max(0, QUEUE_CAPACITY - length),
+    },
     value: { label: "入队值", onlyFor: ["enqueue"] },
   },
   legend: [
@@ -165,11 +180,11 @@ export const queue: ReadyTopic = {
     },
     {
       title: "假溢出与循环队列",
-      body: "槽位数量固定时，rear 一旦到达末端就无法继续入队，即使前面的槽位已经空出来，这叫假溢出。把 front 和 rear 改成对容量取模的循环队列即可复用空槽。",
+      body: "front 左侧的槽位出队后就再也用不上了，rear 一撞到末端，即使前面空着也入不了队，这叫假溢出。把「初始 front」调大、元素填到队尾，就能复现这一幕；把 front 和 rear 改成对容量取模的循环队列即可复用空槽。",
     },
   ],
-  trace: ({ values, operation, value }) =>
-    queueTrace(values, operation, value),
+  trace: ({ values, operation, value, index }) =>
+    queueTrace(values, operation, value, QUEUE_CAPACITY, index),
   code: (language, operation) =>
     parseCode(templates[language][operation] ?? templates[language].enqueue),
 };

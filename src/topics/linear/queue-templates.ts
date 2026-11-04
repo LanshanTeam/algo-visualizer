@@ -38,23 +38,22 @@ export const templates: Record<Language, Record<string, string>> = {
 }`,
   },
   Python: {
-    enqueue: `from collections import deque
-
-def enqueue(q, value): # @start
-    if len(q) >= CAP: # @check
-        return False
-    q.append(value) # @write
-    return True # @done`,
-    dequeue: `def dequeue(q): # @start
-    if not q: # @check
+    enqueue: `def enqueue(data, front, rear, value): # @start
+    if rear + 1 >= CAP: # @check
+        return rear
+    rear += 1
+    data[rear] = value # @write
+    return rear # @done`,
+    dequeue: `def dequeue(data, front, rear): # @start
+    if front > rear: # @check
+        return front, None
+    out = data[front] # @front
+    front += 1 # @dequeue
+    return front, out # @done`,
+    peek: `def head(data, front, rear): # @start
+    if front > rear: # @check
         return None
-    out = q[0] # @front
-    q.popleft() # @dequeue
-    return out # @done`,
-    peek: `def head(q): # @start
-    if not q: # @check
-        return None
-    return q[0] # @front
+    return data[front] # @front
 # 只读队头，不改变队列 # @done`,
   },
   Go: {
@@ -99,26 +98,27 @@ def enqueue(q, value): # @start
 } // @done`,
   },
   Rust: {
-    enqueue: `fn enqueue(&mut self, value: i32) -> bool { // @start
-    if self.data.len() == CAP { // @check
+    enqueue: `fn enqueue(data: &mut [i32], rear: &mut isize, value: i32) -> bool { // @start
+    if *rear + 1 >= CAP as isize { // @check
         return false;
     }
-    self.data.push_back(value); // @write
+    *rear += 1;
+    data[*rear as usize] = value; // @write
     true // @done
 }`,
-    dequeue: `fn dequeue(&mut self) -> Option<i32> { // @start
-    if self.data.is_empty() { // @check
+    dequeue: `fn dequeue(data: &[i32], front: &mut isize, rear: isize) -> Option<i32> { // @start
+    if *front > rear { // @check
         return None;
     }
-    let out = *self.data.front().unwrap(); // @front
-    self.data.pop_front(); // @dequeue
+    let out = data[*front as usize]; // @front
+    *front += 1; // @dequeue
     Some(out) // @done
 }`,
-    peek: `fn head(&self) -> Option<i32> { // @start
-    if self.data.is_empty() { // @check
+    peek: `fn head(data: &[i32], front: isize, rear: isize) -> Option<i32> { // @start
+    if front > rear { // @check
         return None;
     }
-    self.data.front().copied() // @front
+    Some(data[front as usize]) // @front
 } // @done`,
   },
 };

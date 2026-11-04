@@ -31,12 +31,43 @@ describe("顺序队列", () => {
     expect(frames[2].anchor).toBe("front");
     expect(frames[2].narration).toContain("14");
   });
-  it("rear 到达末端时演示假溢出", () => {
+  it("八个槽位占满时是真正的队满", () => {
     const full = Array.from({ length: QUEUE_CAPACITY }, (_, i) => i);
     const frames = queueTrace(full, "enqueue", 9);
-    expect(frames.at(-1)!.anchor).toBe("check");
-    expect(frames.at(-1)!.narration).toContain("假溢出");
-    expect(frames.at(-1)!.items).toHaveLength(QUEUE_CAPACITY);
+    const last = frames.at(-1)!;
+    expect(last.anchor).toBe("check");
+    expect(last.narration).toContain("队列已满");
+    expect(last.narration).not.toContain("假溢出");
+    expect(last.items).toHaveLength(QUEUE_CAPACITY);
+  });
+  it("初始 front 偏移 + 队尾占满才是假溢出", () => {
+    const frames = queueTrace(
+      [1, 2, 3, 4, 5, 6],
+      "enqueue",
+      9,
+      QUEUE_CAPACITY,
+      2,
+    );
+    const last = frames.at(-1)!;
+    expect(last.anchor).toBe("check");
+    expect(last.narration).toContain("假溢出");
+    expect(last.narration).toContain("空着 2 个槽位");
+    // 六个元素占满 2..7，前两个槽位是空的，rear 已经到底
+    expect(last.variables).toMatchObject({ front: 2, rear: 7 });
+    expect(last.items).toHaveLength(6);
+  });
+  it("初始 front 只挪动槽位起点，出队入队逻辑不变", () => {
+    const frames = queueTrace([1, 2, 3], "dequeue", 0, QUEUE_CAPACITY, 3);
+    const last = frames.at(-1)!;
+    expect(last.variables).toMatchObject({ front: 4, rear: 5 });
+    expect(last.items.map((item) => item.value)).toEqual([2, 3]);
+  });
+  it("拒绝越界的初始 front", () => {
+    expect(() =>
+      queueTrace([1, 2, 3], "peek", 0, QUEUE_CAPACITY, 6),
+    ).toThrow();
+    expect(() => queueTrace([], "peek", 0, QUEUE_CAPACITY, -1)).toThrow();
+    expect(() => queueTrace([1], "peek", 0, QUEUE_CAPACITY, 1.5)).toThrow();
   });
   it("空队列出队与取队头只提示下溢", () => {
     for (const operation of ["dequeue", "peek"])
@@ -55,6 +86,24 @@ describe("顺序队列", () => {
               (line) => line.anchor === frame.anchor,
             ),
           ).toBe(true);
+  });
+  it("六种语言都用固定数组 + front/rear，不用会自动挪元素的容器", () => {
+    for (const language of languages) {
+      const source = ["enqueue", "dequeue", "peek"]
+        .map((operation) =>
+          queue
+            .code(language, operation)
+            .map((line) => line.text)
+            .join("\n"),
+        )
+        .join("\n");
+      // deque / VecDeque 出队不空出槽位，会和动画演示的顺序队列对不上
+      expect(source).not.toMatch(
+        /\bdeque\b|\bDeque\b|popleft|pop_front|push_back/,
+      );
+      expect(source).toMatch(/rear\s*\+\s*1\s*>=/);
+      expect(source).toMatch(/front\s*>\s*(q->|\*)?rear/);
+    }
   });
   it("声明固定槽位数", () => {
     expect(queue.controls.capacity).toBe(QUEUE_CAPACITY);
