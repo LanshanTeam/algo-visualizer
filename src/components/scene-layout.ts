@@ -1,7 +1,7 @@
 import type { Frame, ImplementedSceneKind } from "../core/types";
 import type { Track } from "./scene-geometry";
 
-/** 竖排栈最多展示 6 个槽位，再多会超出 208 的逻辑高度。 */
+/** 竖排栈最多展示 6 个槽位，再多会超出逻辑高度。 */
 const STACK_SLOTS_MAX = 6;
 /** 栈底槽位的下边缘。 */
 const STACK_BOTTOM = 184;
@@ -23,8 +23,19 @@ export function createSceneLayout({
   const vertical = kind === "stack";
   const nodeHeight = vertical ? 26 : 52,
     nodeWidth = linked ? 80 : vertical ? 104 : 58,
-    stride = vertical ? 30 : linked ? 112 : 76;
+    // Tighter array columns enlarge the whole SVG at constrained widths;
+    // increasing maxWidth alone has no effect when the card is narrower.
+    // Keep 10 units between cells and preserve all vertical motion lanes.
+    stride = vertical ? 30 : linked ? 112 : 68;
+  const extended =
+    !linked &&
+    !vertical &&
+    (frame.arraySlots !== undefined ||
+      frame.held !== undefined ||
+      frame.auxiliary !== undefined);
   const baseline = linked ? 84 : 72;
+  // Leave a real gap below the held node without moving the shared main row.
+  const heldY = 16;
   const slots = linked
     ? 0
     : Math.max(1, vertical ? Math.min(capacity, STACK_SLOTS_MAX) : capacity);
@@ -36,15 +47,19 @@ export function createSceneLayout({
       : Math.max(430, 56 + Math.max(0, slots - 1) * stride + nodeWidth);
   const front = (state: Frame) => Number(state.variables.front ?? 0);
   const position = (state: Frame, id: number) => {
-    const index = state.items.findIndex((item) => item.id === id);
+    const index =
+      !linked && state.arraySlots
+        ? state.arraySlots.findIndex((item) => item?.id === id)
+        : state.items.findIndex((item) => item.id === id);
+    // 栈自下而上堆叠，队列按槽位摆放：出队只让 front 右移，元素原地不动。
     if (vertical)
       return {
         x: STACK_COLUMN_X,
         y: STACK_BOTTOM - nodeHeight - index * stride,
       };
-    // 顺序队列按槽位摆放：出队只让 front 右移，元素原地不动。
     if (kind === "queue")
       return { x: 28 + (front(state) + index) * stride, y: baseline };
+    if (!linked && state.held?.id === id) return { x: 28, y: heldY };
     const preparingInsert =
       linked &&
       state.detached !== undefined &&
@@ -84,20 +99,34 @@ export function createSceneLayout({
     const to = position(frame, id);
     const seen = previous?.items.some((item) => item.id === id) ?? false;
     const from = seen ? position(previous!, id) : to;
-    if (!linked) {
-      // 新元素不从邻居所在的那一行凭空出现：数组从下方升入，栈与队列从上方落入。
-      // 只有存在上一帧时才需要入场轨迹，跳转或首帧直接落在目标位置。
+    // 栈与队列的槽位固定：新元素竖直落入（数组从下方升入），已有元素不横向搬家。
+    if (vertical || kind === "queue") {
       if (previous && !seen) {
-        if (kind === "array")
-          return {
-            x: [to.x, to.x, to.x, to.x],
-            y: [to.y + 56, to.y + 56, to.y, to.y],
-          };
         const lift = vertical ? Math.min(56, to.y) : 56;
         return { x: [to.x, to.x], y: [to.y - lift, to.y] };
       }
-      // 只有数组会在同一行内左右挪动，走上下轨道避让；栈与队列只做竖直或槽位对齐。
-      if (kind !== "array") return { x: [from.x, to.x], y: [from.y, to.y] };
+      return { x: [from.x, to.x], y: [from.y, to.y] };
+    }
+    if (!linked) {
+      // Merge's "copy" frame commits the whole buffer. Rewinding that
+      // boundary is atomic too; merely carrying an auxiliary row is not.
+      const atomicWriteback =
+        frame.anchor === "copy" || previous?.anchor === "copy";
+      if (atomicWriteback)
+        return { x: times.map(() => to.x), y: times.map(() => to.y) };
+      // 顺序表插入：新元素从下方升入，不从邻格空位凭空冒出。
+      if (previous && !seen && !extended)
+        return {
+          x: [to.x, to.x, to.x, to.x],
+          y: [to.y + 56, to.y + 56, to.y, to.y],
+        };
+      if (extended && (frame.held || previous?.held)) {
+        const held = frame.held?.id === id || previous?.held?.id === id;
+        return {
+          x: [from.x, from.x, to.x, to.x],
+          y: held ? [from.y, heldY, heldY, to.y] : [from.y, from.y, to.y, to.y],
+        };
+      }
       const lane = from.x === to.x ? 0 : from.x < to.x ? -64 : 64;
       return {
         x: [from.x, from.x, to.x, to.x],
@@ -115,6 +144,7 @@ export function createSceneLayout({
     return { x: [from.x, to.x], y: [from.y, to.y] };
   };
   return {
+    height: !linked && frame.auxiliary ? 284 : 208,
     nodeHeight,
     nodeWidth,
     stride,

@@ -2,10 +2,20 @@ import type { Frame, ImplementedSceneKind } from "../core/types";
 import {
   overlaps,
   type Box,
+  type SceneBadge,
+  type SceneBucket,
+  type SceneFormula,
+  type SceneHeapCell,
   type SceneLink,
+  type SceneUnionColumn,
+  type SceneUnionRowLabel,
   type Tone,
 } from "./scene-geometry";
+import { createHashLayout } from "./hash-layout";
+import { createHeapLayout } from "./heap-layout";
 import { createSceneLayout } from "./scene-layout";
+import { createTreeLayout } from "./tree-layout";
+import { createUnionFindLayout } from "./union-find-layout";
 
 export { connectionPathAt, sampleTrack } from "./scene-geometry";
 export type { SceneLink } from "./scene-geometry";
@@ -17,21 +27,34 @@ export function createAnimationScene({
   previous,
   kind,
   capacity,
+  treeDepth = 0,
+  hashChainCapacity = 0,
 }: {
   frame: Frame;
   previous?: Frame;
   kind: ImplementedSceneKind;
   capacity: number;
+  treeDepth?: number;
+  hashChainCapacity?: number;
 }) {
+  if (kind === "hash")
+    return createHashScene({ frame, previous, chainCapacity: hashChainCapacity });
+  if (kind === "heap")
+    return createHeapScene({ frame, previous, capacity });
+  if (kind === "union-find")
+    return createUnionFindScene({ frame, previous, capacity });
+  if (kind === "tree")
+    return createTreeScene({ frame, previous, capacity, treeDepth });
   const linked = kind === "linked-list";
   const vertical = kind === "stack";
   const queue = kind === "queue";
   const {
+    height,
     nodeHeight,
     nodeWidth,
     stride,
     baseline,
-    slots,
+    slots: slotCount,
     columnX,
     bottom,
     width,
@@ -39,9 +62,13 @@ export function createAnimationScene({
     position,
     track,
   } = createSceneLayout({ frame, previous, kind, capacity });
-  const low = Number(frame.variables.low),
-    high = Number(frame.variables.high);
-  const nodes = frame.items.map((item, index) => {
+  const slots = !linked ? (frame.arraySlots ?? frame.items) : frame.items;
+  const low = frame.range?.low ?? Number(frame.variables.low),
+    high = frame.range?.high ?? Number(frame.variables.high);
+  const nodes = frame.items.map((item, itemIndex) => {
+    const index = linked
+      ? itemIndex
+      : slots.findIndex((slot) => slot?.id === item.id);
     const tone: Tone =
       !linked && index === frame.pointers.pivot
         ? "pivot"
@@ -75,6 +102,22 @@ export function createAnimationScene({
           : 25,
     };
   });
+  const auxiliary = !linked && frame.auxiliary ? {
+    label: frame.auxiliary.label,
+    labelX: 28, labelY: 196,
+    slots: frame.auxiliary.slots.map((_, index) => ({
+      x: 28 + index * stride, y: 208, width: nodeWidth, height: nodeHeight,
+    })),
+    nodes: frame.auxiliary.slots.flatMap((item, index) => {
+      const old = previous?.auxiliary?.slots[index];
+      const entries = item ? [item] : old ? [old] : [];
+      return entries.map(value => ({
+        ...value, index, x: 28 + index * stride, y: 208,
+        width: nodeWidth, height: nodeHeight,
+        opacity: !previous ? [1,1,1,1] : !item ? [1,1,0,0] : old?.id === item.id ? [1,1,1,1] : [0,0,1,1],
+      }));
+    }),
+  } : undefined;
   const hasMotion =
     !!previous &&
     (nodes.some(
@@ -84,7 +127,8 @@ export function createAnimationScene({
       previous.items.some(
         (old) => !frame.items.some((item) => item.id === old.id),
       ) ||
-      JSON.stringify(previous.links) !== JSON.stringify(frame.links));
+      JSON.stringify(previous.links) !== JSON.stringify(frame.links) ||
+      (!linked && JSON.stringify(previous.auxiliary) !== JSON.stringify(frame.auxiliary)));
   const crossedByMotion = (box: Box) =>
     hasMotion &&
     nodes.some((node) =>
@@ -98,16 +142,20 @@ export function createAnimationScene({
         box,
       ),
     );
-  const groups = new Map<number, { id: number; names: string[] }>();
+  const groups = new Map<
+    number,
+    { id: number | undefined; index: number; names: string[] }
+  >();
   for (const [name, index] of Object.entries(frame.pointers)) {
-    const item = frame.items[index];
-    if (!item) continue;
-    const key = linked || vertical ? item.id : index;
-    const group = groups.get(key) ?? { id: item.id, names: [] };
+    const item = slots[index];
+    if (index < 0 || index >= slots.length || (linked && !item)) continue;
+    // 链表与竖排栈按节点身份合并标注，数组与队列按槽位合并。
+    const key = linked || vertical ? item!.id : index;
+    const group = groups.get(key) ?? { id: item?.id, index, names: [] };
     group.names.push(name);
     groups.set(key, group);
   }
-  const pointers = [...groups].map(([key, { id, names }]) => {
+  const pointers = [...groups].map(([key, { id, index, names }]) => {
     const name = names.join(",");
     const above =
       linked && (frame.detached === id || names.includes("newNode"));
@@ -116,16 +164,22 @@ export function createAnimationScene({
       40,
       Math.ceil(name.length * fontSize * 0.62 + 12),
     );
-    const owner = track(id);
-    const cell = position(frame, id);
-    // 链表指针必须跟着目标节点走：插入让位、删除绕过时都不能瞬移到目标槽位，
-    // 所以横坐标取该节点自己的轨迹。数组与队列的槽位不动，按槽位定位即可；
-    // 竖排栈的 top 标注贴在单元格右侧。
+    const owner =
+      id === undefined
+        ? {
+            x: times.map(() => 28 + index * stride),
+            y: times.map(() => baseline),
+          }
+        : track(id);
+    // 链表指针必须跟着目标节点走：插入让位、删除绕过时都不能瞬移到目标槽位；
+    // 数组按槽位、队列按含 front 偏移的槽位定位；竖排栈的 top 标注贴在单元格右侧。
+    const cellX =
+      id === undefined ? 28 + index * stride : position(frame, id).x;
     const x = linked
       ? owner.x.map((value) => value + nodeWidth / 2)
       : vertical
         ? owner.x.map((value) => value + nodeWidth + 10)
-        : times.map(() => cell.x + nodeWidth / 2);
+        : times.map(() => cellX + nodeWidth / 2);
     const y = vertical
       ? owner.y.map((value) => value + nodeHeight / 2)
       : above
@@ -156,21 +210,21 @@ export function createAnimationScene({
         }),
     };
   });
+  const slotTotal = linked ? 0 : Math.max(slotCount, slots.length);
   const slotBoxes = linked
     ? []
-    : Array.from({ length: slots }, (_, index) => ({
+    : Array.from({ length: slotTotal }, (_, index) => ({
         x: vertical ? columnX : 28 + index * stride,
         y: vertical ? bottom - nodeHeight - index * stride : baseline,
         width: nodeWidth,
         height: nodeHeight,
       }));
-  // 定长布局给每个槽位都标号（空槽也要有），链表只标现有节点。
+  // 链表只标现有节点；定长布局给每个槽位都标号，空槽位也要有编号。
   const indices = linked
     ? frame.items
         .filter((item) => frame.detached !== item.id)
         .map((item, index) => {
-          const cell = position(frame, item.id);
-          const x = cell.x + nodeWidth / 2,
+          const x = position(frame, item.id).x + nodeWidth / 2,
             y = baseline + nodeHeight + 16;
           return {
             index,
@@ -212,6 +266,9 @@ export function createAnimationScene({
         : undefined;
   const links: SceneLink[] = (frame.links ?? []).map(([from, to]) => ({
     id: `${from}-${to}`,
+    geometry: "next",
+    sourceHeight: 0,
+    arrow: true,
     highlighted: from === changedFrom,
     obstacles: frame.items
       .filter((item) => item.id !== from && item.id !== to)
@@ -237,16 +294,24 @@ export function createAnimationScene({
     : [];
   return {
     width,
-    height: 208,
+    height,
     times,
     kind,
     linked,
     vertical,
     nodes,
+    auxiliary,
+    heldLabel: !linked && frame.held ? { x: 28, y: 10, text: "暂存 key" } : undefined,
     pointers,
+    badges: [],
     indices,
     links,
     tails,
+    buckets: [],
+    formula: undefined,
+    heapCells: [],
+    unionColumns: [],
+    unionRowLabels: [],
     hasMotion,
     range:
       !linked &&
@@ -254,7 +319,8 @@ export function createAnimationScene({
       !queue &&
       frame.items.length > 0 &&
       Number.isFinite(low) &&
-      Number.isFinite(high)
+      Number.isFinite(high) &&
+      low <= high
         ? {
             x: 18 + low * stride,
             y: baseline - 8,
@@ -262,13 +328,13 @@ export function createAnimationScene({
             height: nodeHeight + 16,
           }
         : undefined,
-    // 竖排栈用虚线容器圈出固定容量，其余布局逐槽绘制占位格。
+    // 竖排栈用虚线容器圈出固定容量；其余布局逐槽绘制占位格。
     container: vertical
       ? {
           x: columnX - 6,
-          y: bottom - nodeHeight - (slots - 1) * stride - 6,
+          y: bottom - nodeHeight - (slotCount - 1) * stride - 6,
           width: nodeWidth + 12,
-          height: (slots - 1) * stride + nodeHeight + 12,
+          height: (slotCount - 1) * stride + nodeHeight + 12,
         }
       : undefined,
     captions: vertical
@@ -280,7 +346,7 @@ export function createAnimationScene({
             anchor: "middle" as const,
           },
           {
-            text: `容量 ${slots}`,
+            text: `容量 ${slotCount}`,
             x: columnX + nodeWidth + 22,
             y: 202,
             anchor: "start" as const,
@@ -305,6 +371,556 @@ export function createAnimationScene({
       linked && frame.headId === null && frame.items.length > 0
         ? { x: 28, y: baseline + 32 }
         : undefined,
+  };
+}
+function createHashScene({
+  frame,
+  previous,
+  chainCapacity,
+}: {
+  frame: Frame;
+  previous?: Frame;
+  chainCapacity: number;
+}) {
+  const layout = createHashLayout({
+    frame,
+    previous,
+    chainCapacity,
+  });
+  const indexOf = (id: number) =>
+    frame.items.findIndex((item) => item.id === id);
+  const nodes = frame.items.map((item, index) => {
+    const tone: Tone = frame.active.includes(index)
+      ? "pivot"
+      : frame.settled.includes(index)
+        ? "active"
+        : "idle";
+    const fontSize = Math.abs(item.value) > 99 ? 10 : 11;
+    return {
+      ...item,
+      ...layout.track(item.id),
+      width: layout.nodeWidth,
+      height: layout.nodeHeight,
+      tone,
+      muted: false,
+      entering: !!previous && !previous.items.some((old) => old.id === item.id),
+      valueX: layout.nodeWidth / 2,
+      valueY: layout.nodeHeight / 2 + fontSize * 0.35,
+      fontSize,
+    };
+  });
+  const links: SceneLink[] = (frame.links ?? [])
+    .filter(([from, to]) => indexOf(from) >= 0 && indexOf(to) >= 0)
+    .map(([from, to]) => {
+      const child = indexOf(to);
+      return {
+        id: `${from}-${to}`,
+        geometry: "hash",
+        sourceHeight: layout.nodeHeight,
+        arrow: true,
+        highlighted:
+          child >= 0 &&
+          (frame.active.includes(child) || frame.settled.includes(child)),
+        obstacles: [],
+        from: layout.track(from),
+        to: layout.track(to),
+        sourceWidth: layout.nodeWidth,
+        targetWidth: layout.nodeWidth,
+        targetHeight: layout.nodeHeight,
+        portY: layout.nodeHeight / 2,
+        existed:
+          previous?.links?.some(
+            (link) => link[0] === from && link[1] === to,
+          ) ?? true,
+      };
+    });
+  const heads = frame.bucketHeads ?? [];
+  const buckets: SceneBucket[] = Array.from(
+    { length: 7 },
+    (_, bucket) => {
+      const headId = heads[bucket];
+      const hasHead =
+        typeof headId === "number" &&
+        frame.items.some((item) => item.id === headId);
+      const owner = hasHead ? layout.track(headId) : undefined;
+      return {
+        index: bucket,
+        x: layout.bucketX,
+        y: layout.bucketRowY(bucket),
+        width: layout.bucketWidth,
+        height: layout.bucketHeight,
+        active: frame.activeBuckets?.includes(bucket) ?? false,
+        head: owner
+          ? {
+              x: owner.x,
+              y: owner.y.map((y) => y + layout.nodeHeight / 2),
+            }
+          : undefined,
+      };
+    },
+  );
+  const key = Number(frame.variables.key);
+  const bucket = Number(frame.variables.bucket);
+  const calculated =
+    frame.variables.key !== undefined &&
+    frame.variables.bucket !== undefined &&
+    Number.isInteger(key) &&
+    Number.isInteger(bucket) &&
+    bucket >= 0 &&
+    bucket < 7;
+  const formula: SceneFormula = {
+    text: calculated
+      ? `h(${key}) = ((${key} % 7) + 7) % 7 = ${bucket}`
+      : "除留余数法  h(key) = ((key % 7) + 7) % 7",
+    ...layout.formula,
+    active: calculated,
+  };
+  const hasMotion =
+    !!previous &&
+    (nodes.some(
+      (node) =>
+        node.entering || new Set(node.x).size > 1 || new Set(node.y).size > 1,
+    ) ||
+      previous.items.some(
+        (old) => !frame.items.some((item) => item.id === old.id),
+      ) ||
+      JSON.stringify(previous.links) !== JSON.stringify(frame.links) ||
+      JSON.stringify(previous.bucketHeads) !==
+        JSON.stringify(frame.bucketHeads));
+  return {
+    width: layout.width,
+    height: layout.height,
+    times: layout.times,
+    linked: false,
+    auxiliary: undefined,
+    heldLabel: undefined,
+    nodes,
+    pointers: [],
+    badges: [],
+    indices: [],
+    links,
+    tails: [],
+    buckets,
+    formula,
+    container: undefined,
+    captions: [],
+    vertical: false,
+    heapCells: [],
+    unionColumns: [],
+    unionRowLabels: [],
+    hasMotion,
+    range: undefined,
+    slots: [],
+    empty: undefined,
+    nullHead: undefined,
+  };
+}
+
+function createHeapScene({
+  frame,
+  previous,
+  capacity,
+}: {
+  frame: Frame;
+  previous?: Frame;
+  capacity: number;
+}) {
+  const layout = createHeapLayout({ frame, previous, capacity });
+  const indexOf = (id: number) =>
+    frame.items.findIndex((item) => item.id === id);
+  const nodes = frame.items.map((item, index) => {
+    const tone: Tone = frame.active.includes(index)
+      ? "pivot"
+      : frame.settled.includes(index)
+        ? "active"
+        : "idle";
+    const fontSize = Math.abs(item.value) > 99 ? 11 : 14;
+    return {
+      ...item,
+      ...layout.track(item.id),
+      width: layout.nodeDiameter,
+      height: layout.nodeDiameter,
+      tone,
+      muted: false,
+      entering: !!previous && !previous.items.some((old) => old.id === item.id),
+      valueX: layout.nodeDiameter / 2,
+      valueY: layout.nodeDiameter / 2 + fontSize * 0.35,
+      fontSize,
+    };
+  });
+  const links: SceneLink[] = (frame.links ?? [])
+    .filter(([from, to]) => indexOf(from) >= 0 && indexOf(to) >= 0)
+    .map(([from, to]) => {
+      const parent = indexOf(from);
+      const child = indexOf(to);
+      return {
+        id: `${from}-${to}`,
+        geometry: "tree",
+        sourceHeight: layout.nodeDiameter,
+        arrow: false,
+        // 上浮时孩子是当前节点，下沉时父节点是当前节点；任一端被访问都高亮这条父子边。
+        highlighted:
+          (parent >= 0 && frame.active.includes(parent)) ||
+          (child >= 0 &&
+            (frame.active.includes(child) || frame.settled.includes(child))),
+        obstacles: [],
+        from: layout.track(from),
+        to: layout.track(to),
+        sourceWidth: layout.nodeDiameter,
+        targetWidth: layout.nodeDiameter,
+        targetHeight: layout.nodeDiameter,
+        portY: 0,
+        existed:
+          previous?.links?.some(
+            (link) => link[0] === from && link[1] === to,
+          ) ?? true,
+      };
+    });
+  const cells: SceneHeapCell[] = layout.order.map((id, index) => {
+    const itemIndex = indexOf(id);
+    const item = frame.items[itemIndex];
+    const tone: Tone = frame.active.includes(itemIndex)
+      ? "pivot"
+      : frame.settled.includes(itemIndex)
+        ? "active"
+        : "idle";
+    return {
+      index,
+      id,
+      value: item.value,
+      ...layout.cell(index),
+      tone,
+    };
+  });
+  const hasMotion =
+    !!previous &&
+    (nodes.some(
+      (node) =>
+        node.entering || new Set(node.x).size > 1 || new Set(node.y).size > 1,
+    ) ||
+      previous.items.some(
+        (old) => !frame.items.some((item) => item.id === old.id),
+      ) ||
+      JSON.stringify(previous.links) !== JSON.stringify(frame.links) ||
+      JSON.stringify(previous.heapOrder) !== JSON.stringify(frame.heapOrder));
+  return {
+    width: layout.width,
+    height: layout.height,
+    times: layout.times,
+    linked: false,
+    auxiliary: undefined,
+    heldLabel: undefined,
+    nodes,
+    pointers: [],
+    badges: [],
+    indices: [],
+    links,
+    tails: [],
+    buckets: [],
+    formula: undefined,
+    container: undefined,
+    captions: [],
+    vertical: false,
+    heapCells: cells,
+    unionColumns: [],
+    unionRowLabels: [],
+    hasMotion,
+    range: undefined,
+    slots: [],
+    empty: frame.items.length
+      ? undefined
+      : { text: "空堆", x: layout.width / 2, y: 90 },
+    nullHead: undefined,
+  };
+}
+
+function createTreeScene({
+  frame,
+  previous,
+  capacity,
+  treeDepth,
+}: {
+  frame: Frame;
+  previous?: Frame;
+  capacity: number;
+  treeDepth: number;
+}) {
+  const { diameter, width, times, position, track } = createTreeLayout({
+    frame,
+    previous,
+    capacity,
+    treeDepth,
+  });
+  const indexOf = (id: number) =>
+    frame.items.findIndex((item) => item.id === id);
+  const nodes = frame.items.map((item, index) => {
+    // 树把“已访问”映射成蓝色 active、当前节点映射成琥珀 pivot。
+    const tone: Tone = frame.active.includes(index)
+      ? "pivot"
+      : frame.settled.includes(index)
+        ? "active"
+        : "idle";
+    const base = Math.min(20, Math.max(7, diameter * 0.45));
+    const fontSize = Math.abs(item.value) > 99 ? base * 0.75 : base;
+    return {
+      ...item,
+      ...track(item.id),
+      width: diameter,
+      height: diameter,
+      tone,
+      muted: false,
+      entering: !!previous && !previous.items.some((old) => old.id === item.id),
+      valueX: diameter / 2,
+      valueY: diameter / 2 + fontSize * 0.35,
+      fontSize,
+    };
+  });
+  const activeIndex = frame.active[0];
+  const activeItem =
+    activeIndex === undefined ? undefined : frame.items[activeIndex];
+  let badges: SceneBadge[] = [];
+  if (frame.target !== undefined && activeItem) {
+    const text = `target = ${frame.target}`;
+    const fontSize = 11;
+    const height = 20;
+    const badgeWidth = Math.max(48, Math.ceil(text.length * 6.2 + 12));
+    const place = (state: Frame, id: number) => {
+      const node = position(state, id);
+      let left = node.x + diameter + 6;
+      let placement: SceneBadge["placement"] = "upper-right";
+      if (left + badgeWidth > width - 4) {
+        left = node.x - 6 - badgeWidth;
+        placement = "upper-left";
+      }
+      left = Math.max(4, Math.min(width - badgeWidth - 4, left));
+      const top = Math.max(4, node.y - height);
+      return {
+        x: left + badgeWidth / 2,
+        y: top + height / 2,
+        placement,
+      };
+    };
+    const to = place(frame, activeItem.id);
+    const previousIndex = previous?.active[0];
+    const previousItem =
+      previousIndex === undefined ? undefined : previous?.items[previousIndex];
+    const from =
+      previous?.target !== undefined && previousItem
+        ? place(previous, previousItem.id)
+        : to;
+    badges = [
+      {
+        key: "target",
+        text,
+        targetId: activeItem.id,
+        x: [from.x, to.x],
+        y: [from.y, to.y],
+        width: badgeWidth,
+        height,
+        fontSize,
+        tone: "pivot",
+        placement: to.placement,
+      },
+    ];
+  }
+  const badgeMotion = badges.some(
+    (badge) => badge.x[0] !== badge.x[1] || badge.y[0] !== badge.y[1],
+  );
+  const hasMotion =
+    !!previous &&
+    (nodes.some(
+      (node) =>
+        node.entering || new Set(node.x).size > 1 || new Set(node.y).size > 1,
+    ) ||
+      previous.items.some(
+        (old) => !frame.items.some((item) => item.id === old.id),
+      ) ||
+      JSON.stringify(previous.links) !== JSON.stringify(frame.links) ||
+      badgeMotion);
+  const links: SceneLink[] = (frame.links ?? [])
+    .filter(
+      ([from, to]) => indexOf(from) >= 0 && indexOf(to) >= 0,
+    )
+    .map(([from, to]) => {
+      const child = indexOf(to);
+      return {
+        id: `${from}-${to}`,
+        geometry: "tree",
+        sourceHeight: diameter,
+        arrow: false,
+        highlighted:
+          child >= 0 &&
+          (frame.active.includes(child) || frame.settled.includes(child)),
+        obstacles: [],
+        from: track(from),
+        to: track(to),
+        sourceWidth: diameter,
+        targetWidth: diameter,
+        targetHeight: diameter,
+        portY: 0,
+        existed:
+          previous?.links?.some(
+            (link) => link[0] === from && link[1] === to,
+          ) ?? true,
+      };
+    });
+  return {
+    width,
+    height: 208,
+    times,
+    linked: false,
+    auxiliary: undefined,
+    heldLabel: undefined,
+    nodes,
+    pointers: [],
+    badges,
+    indices: [],
+    links,
+    tails: [],
+    buckets: [],
+    formula: undefined,
+    container: undefined,
+    captions: [],
+    vertical: false,
+    heapCells: [],
+    unionColumns: [],
+    unionRowLabels: [],
+    hasMotion,
+    range: undefined,
+    slots: [],
+    empty: !frame.items.length
+      ? { text: "空树", x: width / 2, y: 108 }
+      : undefined,
+    nullHead: undefined,
+  };
+}
+
+function createUnionFindScene({
+  frame,
+  previous,
+  capacity,
+}: {
+  frame: Frame;
+  previous?: Frame;
+  capacity: number;
+}) {
+  const layout = createUnionFindLayout({ frame, previous, capacity });
+  const indexOf = (id: number) =>
+    frame.items.findIndex((item) => item.id === id);
+  const valueOf = (id: number) =>
+    frame.items.find((item) => item.id === id)?.value ?? id;
+  const nodes = frame.items.map((item, index) => {
+    const parent = frame.unionParents?.[index] ?? item.id;
+    const root = parent === item.id;
+    const tone: Tone = frame.active.includes(index)
+      ? "pivot"
+      : frame.settled.includes(index)
+        ? "active"
+        : root
+          ? "settled"
+          : "idle";
+    const fontSize = Math.abs(item.value) > 99 ? 9 : 11;
+    return {
+      ...item,
+      ...layout.track(item.id),
+      width: layout.nodeDiameter,
+      height: layout.nodeDiameter,
+      tone,
+      muted: false,
+      entering: !!previous && !previous.items.some((old) => old.id === item.id),
+      valueX: layout.nodeDiameter / 2,
+      valueY: layout.nodeDiameter / 2 + fontSize * 0.35,
+      fontSize,
+    };
+  });
+  const links: SceneLink[] = (frame.links ?? [])
+    .filter(([from, to]) => indexOf(from) >= 0 && indexOf(to) >= 0)
+    .map(([from, to]) => {
+      const child = indexOf(from);
+      const parent = indexOf(to);
+      return {
+        id: `${from}-${to}`,
+        geometry: "parent" as const,
+        sourceHeight: layout.nodeDiameter,
+        arrow: true,
+        highlighted:
+          frame.active.includes(child) ||
+          frame.active.includes(parent) ||
+          frame.settled.includes(child),
+        obstacles: [],
+        from: layout.track(from),
+        to: layout.track(to),
+        sourceWidth: layout.nodeDiameter,
+        targetWidth: layout.nodeDiameter,
+        targetHeight: layout.nodeDiameter,
+        portY: 0,
+        existed:
+          previous?.links?.some(
+            (link) => link[0] === from && link[1] === to,
+          ) ?? true,
+      };
+    });
+  const columns: SceneUnionColumn[] = frame.items.map((item, index) => {
+    const parentId = frame.unionParents?.[index] ?? item.id;
+    const tone: Tone = frame.active.includes(index)
+      ? "pivot"
+      : frame.settled.includes(index)
+        ? "active"
+        : parentId === item.id
+          ? "settled"
+          : "idle";
+    return {
+      index,
+      id: item.id,
+      element: item.value,
+      ...layout.column(index),
+      parentId,
+      parent: valueOf(parentId),
+      rank: frame.unionRanks?.[index] ?? 0,
+      root: parentId === item.id,
+      tone,
+    };
+  });
+  const rowLabels: SceneUnionRowLabel[] = layout.rowLabels;
+  const hasMotion =
+    !!previous &&
+    (nodes.some(
+      (node) =>
+        node.entering || new Set(node.x).size > 1 || new Set(node.y).size > 1,
+    ) ||
+      previous.items.some(
+        (old) => !frame.items.some((item) => item.id === old.id),
+      ) ||
+      JSON.stringify(previous.links) !== JSON.stringify(frame.links) ||
+      JSON.stringify(previous.unionParents) !==
+        JSON.stringify(frame.unionParents) ||
+      JSON.stringify(previous.unionRanks) !== JSON.stringify(frame.unionRanks));
+  return {
+    width: layout.width,
+    height: layout.height,
+    times: layout.times,
+    linked: false,
+    auxiliary: undefined,
+    heldLabel: undefined,
+    nodes,
+    pointers: [],
+    badges: [],
+    indices: [],
+    links,
+    tails: [],
+    buckets: [],
+    formula: undefined,
+    container: undefined,
+    captions: [],
+    vertical: false,
+    heapCells: [],
+    unionColumns: columns,
+    unionRowLabels: rowLabels,
+    hasMotion,
+    range: undefined,
+    slots: [],
+    empty: undefined,
+    nullHead: undefined,
   };
 }
 export type AnimationScene = ReturnType<typeof createAnimationScene>;

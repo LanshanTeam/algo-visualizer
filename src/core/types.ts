@@ -12,28 +12,51 @@ export type SceneKind =
   | "stack"
   | "queue"
   | "graph"
-  | "tree";
+  | "tree"
+  | "hash"
+  | "heap"
+  | "union-find";
 
 /** 渲染器当前真正实现的布局。 */
 export type ImplementedSceneKind =
   | "array"
   | "linked-list"
   | "stack"
-  | "queue";
+  | "queue"
+  | "graph"
+  | "tree"
+  | "hash"
+  | "heap"
+  | "union-find";
 
 export interface Item {
   id: number;
   value: number;
 }
 
+/** 树连线指向的是父节点的左孩子还是右孩子。 */
+export type FrameLinkSide = "left" | "right";
+
+/** 有向连线；树布局用第三项区分左右孩子，其他布局可省略。 */
+export type FrameLink = [from: number, to: number, side?: FrameLinkSide];
+
 /** 一个可回放的演示快照。 */
 export interface Frame {
+  /** 全体主元素的唯一身份集合；未提供 arraySlots 时也表示主数组顺序。 */
   items: Item[];
+  /** 主数组的真实槽位；null 是空洞，不复制或交换暂存元素。 */
+  arraySlots?: (Item | null)[];
+  /** 插入排序从主数组取出的暂存元素。 */
+  held?: Item;
+  /** 独立辅助数组，槽位下标与主数组对齐。 */
+  auxiliary?: { label: string; slots: (Item | null)[] };
+  /** 闭区间；low > high 表示空区间，不绘制范围。 */
+  range?: { low: number; high: number };
   /** 当前操作涉及的节点，渲染为高亮。 */
   active: number[];
   /** 已归位的节点。 */
   settled: number[];
-  /** 指针名到 `items` 下标的映射。 */
+  /** 指针名到主数组槽位（arraySlots ?? items）下标的映射；链表使用 items 下标。 */
   pointers: Record<string, number>;
   /** 语义步骤标识，与代码行的 `@anchor` 对应。 */
   anchor: string;
@@ -41,10 +64,37 @@ export interface Frame {
   variables: Record<string, number | string>;
   /** 递归 / 调用栈，非空时工作台会展示。 */
   stack: string[];
-  /** 有向连线，元素为 `[fromId, toId]`。 */
-  links?: Array<[number, number]>;
+  /** 层序遍历队列，非空时工作台会展示。 */
+  queue?: (string | number)[];
+  /** 哈希表桶头；下标为桶号，值为链头节点 id 或 null。 */
+  bucketHeads?: (number | null)[];
+  /** 当前正在检查/高亮的桶号。 */
+  activeBuckets?: number[];
+  /** 二叉堆的数组顺序；下标为数组下标，值为节点 id。 */
+  heapOrder?: number[];
+  /** 并查集的 parent，按 `items` 顺序；根节点指向自己（父节点 id）。 */
+  unionParents?: number[];
+  /** 并查集的 rank，按 `items` 顺序。 */
+  unionRanks?: number[];
+  /**
+   * 有向连线，元素为 `[fromId, toId]`。
+   * 树布局用可选的第三项标记左/右孩子；缺省时按同一父节点的连线顺序回退。
+   */
+  links?: FrameLink[];
+  edgeWeights?: Record<string, number | string>;
   detached?: number;
   headId?: number | null;
+  /**
+   * 二叉树根节点身份。
+   * 省略时按 `links` 推断（没有被任何连线指向的首个节点）；
+   * `null` 表示未声明根，非空 `items` 会按森林布局展示。
+   */
+  rootId?: number | null;
+  /**
+   * 搜索类帧的目标值；树场景会渲染为跟随当前节点的徽章。
+   * 结构修改帧省略；`active` 为空时即使设置也不显示。
+   */
+  target?: number;
 }
 
 export interface CodeLine {
@@ -58,4 +108,6 @@ export interface TraceInput {
   operation: string;
   index: number;
   value: number;
+  /** 需要第二个元素的专题使用，例如并查集的合并与连通查询。 */
+  value2?: number;
 }

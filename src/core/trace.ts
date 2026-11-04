@@ -24,22 +24,3 @@ export function clampIndex(index: number, max: number): number {
   if (!Number.isFinite(index)) return 0;
   return Math.min(Math.max(0, Math.trunc(index)), Math.max(0, max));
 }
-
-/**
- * 随机数据的条数。默认 7 条，并且留一个空位给插入类操作；
- * `reserved` 是被索引占用的槽位（如队列的初始 front），`capacity` 是画布槽位数。
- */
-export function randomCount({
-  limit = 12,
-  capacity,
-  reserved = 0,
-}: {
-  limit?: number;
-  capacity?: number;
-  reserved?: number;
-}): number {
-  const ceiling = capacity
-    ? Math.min(7, limit - 1, capacity - reserved - 1)
-    : Math.min(7, limit - 1);
-  return Math.max(1, ceiling);
-}

@@ -15,13 +15,21 @@ export const palette = {
   idle: { stroke: "#cbd5e1", fill: "#fff" },
 };
 export type ClockProps = { progress: MotionValue<number>; times: number[] };
+const nodeRadius = 8;
+const nodeFontSize = (value: number) => (Math.abs(value) > 99 ? 19 : 25);
 
 export function SceneNode({
   node,
   linked,
+  circular = false,
   progress,
   times,
-}: ClockProps & { node: AnimationScene["nodes"][number]; linked: boolean }) {
+}: ClockProps & {
+  node: AnimationScene["nodes"][number];
+  linked: boolean;
+  /** 树节点为圆形，用等宽高矩形加圆角实现。 */
+  circular?: boolean;
+}) {
   const present = useIsPresent();
   const x = useTransform(progress, (p) =>
     present ? sampleTrack(node.x, times, p) : node.x.at(-1)!,
@@ -45,7 +53,7 @@ export function SceneNode({
         initial={false}
         width={node.width}
         height={node.height}
-        rx="8"
+        rx={circular ? node.width / 2 : 8}
         animate={{
           ...palette[node.tone],
           strokeWidth:
@@ -82,6 +90,19 @@ export function SceneNode({
   );
 }
 
+/** Auxiliary copies are not primary identities; visibility uses the shared clock. */
+export function AuxiliaryNode({ node, progress, times }: ClockProps & {
+  node: NonNullable<AnimationScene["auxiliary"]>["nodes"][number];
+}) {
+  const opacity = useTransform(progress, p => sampleTrack(node.opacity, times, p));
+  return (
+    <motion.g data-auxiliary-node-id={node.id} transform={`translate(${node.x} ${node.y})`} style={{ opacity }}>
+      <rect width={node.width} height={node.height} rx={nodeRadius} fill={palette.active.fill} stroke={palette.active.stroke} />
+      <text x={node.width / 2} y="34" textAnchor="middle" fontFamily="monospace" fontSize={nodeFontSize(node.value)} fill="#1e293b">{node.value}</text>
+    </motion.g>
+  );
+}
+
 export function SceneEdge({
   link,
   progress,
@@ -106,7 +127,7 @@ export function SceneEdge({
       fill="none"
       stroke={link.highlighted ? palette.active.stroke : "#94a3b8"}
       strokeWidth="2"
-      markerEnd={`url(#${arrowId})`}
+      markerEnd={link.arrow ? `url(#${arrowId})` : undefined}
     />
   );
 }
@@ -226,5 +247,277 @@ export function ScenePointer({
         )}
       </motion.g>
     </Annotation>
+  );
+}
+
+/** 哈希表的桶格；空桶虚线，非空桶用箭头接到链头。 */
+export function SceneBucket({
+  bucket,
+  progress,
+  times,
+  arrowId,
+}: ClockProps & {
+  bucket: AnimationScene["buckets"][number];
+  arrowId: string;
+}) {
+  const headX = bucket.head?.x ?? [0];
+  const headY = bucket.head?.y ?? [0];
+  const x2 = useTransform(progress, (p) => sampleTrack(headX, times, p) - 6);
+  const y2 = useTransform(progress, (p) => sampleTrack(headY, times, p));
+  const tone = bucket.active ? palette.pivot : palette.idle;
+  return (
+    <g data-bucket-index={bucket.index} data-bucket-active={bucket.active}>
+      <motion.rect
+        x={bucket.x}
+        y={bucket.y}
+        width={bucket.width}
+        height={bucket.height}
+        rx={6}
+        animate={{
+          fill: tone.fill,
+          stroke: tone.stroke,
+          strokeWidth: bucket.active ? 2 : 1.5,
+        }}
+        transition={{ duration: 0.15 }}
+        strokeDasharray={bucket.head ? undefined : "3 3"}
+      />
+      <text
+        x={bucket.x + bucket.width / 2}
+        y={bucket.y + bucket.height / 2 + 4}
+        textAnchor="middle"
+        fill={bucket.active ? palette.pivot.stroke : "#64748b"}
+        fontFamily="monospace"
+        fontSize="11"
+      >
+        {bucket.index}
+      </text>
+      {bucket.head && (
+        <motion.line
+          x1={bucket.x + bucket.width}
+          y1={bucket.y + bucket.height / 2}
+          x2={x2}
+          y2={y2}
+          stroke={bucket.active ? palette.pivot.stroke : "#94a3b8"}
+          strokeWidth="1.5"
+          markerEnd={`url(#${arrowId})`}
+        />
+      )}
+    </g>
+  );
+}
+
+/** 二叉堆底部的数组格，与上方树节点共享色调。 */
+export function SceneHeapCell({
+  cell,
+}: {
+  cell: AnimationScene["heapCells"][number];
+}) {
+  const tone = palette[cell.tone];
+  const fontSize = Math.abs(cell.value) > 99 ? 9 : 10;
+  return (
+    <g data-heap-index={cell.index} data-heap-id={cell.id}>
+      <text
+        x={cell.x + cell.width / 2}
+        y={cell.y - 4}
+        textAnchor="middle"
+        className="fill-muted-foreground font-mono"
+        fontSize="9"
+      >
+        {cell.index}
+      </text>
+      <motion.rect
+        x={cell.x}
+        y={cell.y}
+        width={cell.width}
+        height={cell.height}
+        rx={5}
+        initial={false}
+        animate={{
+          fill: tone.fill,
+          stroke: tone.stroke,
+          strokeWidth: cell.tone === "idle" ? 1 : 1.5,
+        }}
+        transition={{ duration: 0.15 }}
+      />
+      <text
+        x={cell.x + cell.width / 2}
+        y={cell.y + cell.height / 2 + fontSize * 0.35}
+        textAnchor="middle"
+        fill="#1e293b"
+        fontFamily="monospace"
+        fontSize={fontSize}
+      >
+        {cell.value}
+      </text>
+    </g>
+  );
+}
+
+/** 并查集底部的一列：元素标签、parent 格与 rank 格。 */
+export function SceneUnionCell({
+  column,
+}: {
+  column: AnimationScene["unionColumns"][number];
+}) {
+  const tone = palette[column.tone];
+  const parentFontSize = Math.abs(column.parent) > 99 ? 8 : 9;
+  return (
+    <g
+      data-union-index={column.index}
+      data-union-id={column.id}
+      data-union-parent={column.parentId}
+      data-union-rank={column.rank}
+      data-union-root={column.root}
+    >
+      <text
+        x={column.x + column.width / 2}
+        y={column.parentY - 4}
+        textAnchor="middle"
+        className="fill-muted-foreground font-mono"
+        fontSize="9"
+      >
+        {column.element}
+      </text>
+      <motion.rect
+        x={column.x}
+        y={column.parentY}
+        width={column.width}
+        height={column.parentHeight}
+        rx={4}
+        initial={false}
+        animate={{
+          fill: tone.fill,
+          stroke: tone.stroke,
+          strokeWidth: column.tone === "idle" ? 1 : 1.5,
+        }}
+        transition={{ duration: 0.15 }}
+      />
+      <text
+        x={column.x + column.width / 2}
+        y={column.parentY + column.parentHeight / 2 + 3.5}
+        textAnchor="middle"
+        fill="#1e293b"
+        fontFamily="monospace"
+        fontSize={parentFontSize}
+      >
+        {column.parent}
+      </text>
+      <motion.rect
+        x={column.x}
+        y={column.rankY}
+        width={column.width}
+        height={column.rankHeight}
+        rx={4}
+        initial={false}
+        animate={{
+          fill: tone.fill,
+          stroke: tone.stroke,
+          strokeWidth: column.tone === "idle" ? 1 : 1.5,
+        }}
+        transition={{ duration: 0.15 }}
+      />
+      <text
+        x={column.x + column.width / 2}
+        y={column.rankY + column.rankHeight / 2 + 3}
+        textAnchor="middle"
+        fill="#1e293b"
+        fontFamily="monospace"
+        fontSize="8"
+      >
+        {column.rank}
+      </text>
+    </g>
+  );
+}
+
+/** 并查集左下角的 parent / rank 行名。 */
+export function SceneUnionRowLabel({
+  row,
+}: {
+  row: AnimationScene["unionRowLabels"][number];
+}) {
+  return (
+    <text
+      x={row.x}
+      y={row.y}
+      data-union-row={row.label}
+      className="fill-muted-foreground font-mono"
+      fontSize="10"
+    >
+      {row.label}
+    </text>
+  );
+}
+
+/** 哈希表顶部的除留余数法公式条。 */
+export function SceneFormula({
+  formula,
+}: {
+  formula: AnimationScene["formula"];
+}) {
+  if (!formula) return null;
+  return (
+    <g data-hash-formula={formula.text}>
+      <rect
+        x={formula.x}
+        y={formula.y}
+        width={formula.width}
+        height={formula.height}
+        rx={6}
+        fill={formula.active ? palette.pivot.fill : "#f8fafc"}
+        stroke={formula.active ? palette.pivot.stroke : "#cbd5e1"}
+        strokeWidth={formula.active ? 1.5 : 1}
+      />
+      <text
+        x={formula.x + 10}
+        y={formula.y + formula.height / 2 + 4}
+        fill={formula.active ? palette.pivot.stroke : "#475569"}
+        fontFamily="monospace"
+        fontSize="11"
+      >
+        {formula.text}
+      </text>
+    </g>
+  );
+}
+
+/** 跟随当前节点的目标值徽章，树场景使用。 */
+export function SceneBadge({
+  badge,
+  progress,
+  times,
+}: ClockProps & { badge: AnimationScene["badges"][number] }) {
+  const x = useTransform(progress, (p) => sampleTrack(badge.x, times, p));
+  const y = useTransform(progress, (p) => sampleTrack(badge.y, times, p));
+  return (
+    <motion.g
+      data-target-badge={badge.text}
+      initial={{ opacity: 0, scale: 0.85 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.85 }}
+      transition={{ duration: 0.15 }}
+    >
+      <motion.g style={{ x, y }}>
+        <rect
+          x={-badge.width / 2}
+          y={-badge.height / 2}
+          width={badge.width}
+          height={badge.height}
+          rx="5"
+          fill={palette[badge.tone].fill}
+          stroke={palette[badge.tone].stroke}
+          strokeWidth="1.5"
+        />
+        <text
+          textAnchor="middle"
+          y={badge.fontSize * 0.35}
+          fill={palette[badge.tone].stroke}
+          fontFamily="monospace"
+          fontSize={badge.fontSize}
+        >
+          {badge.text}
+        </text>
+      </motion.g>
+    </motion.g>
   );
 }
