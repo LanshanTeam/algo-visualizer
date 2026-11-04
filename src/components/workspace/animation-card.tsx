@@ -151,9 +151,12 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
             <IconButton
               label="随机数据"
               onClick={() => {
-                const next = randomValues(controls);
-                setInput(next.join(", "));
-                load(next);
+                // 队列的初始 front 本身占槽位，生成时要一起让出来。
+                const next = randomValues(
+                  controls,
+                  controls.index?.occupiesSlots ? index : 0,
+                );
+                if (load(next)) setInput(next.join(", "));
               }}
             >
               <Shuffle />

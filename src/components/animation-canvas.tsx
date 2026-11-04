@@ -21,6 +21,18 @@ import {
 } from "./canvas-primitives";
 import { useAnimationClock } from "./workspace/use-animation-clock";
 
+const LABELS: Record<ImplementedSceneKind, string> = {
+  array: "数组分区、比较与交换动画",
+  "linked-list": "链表节点及 next 指针",
+  stack: "栈的槽位与栈顶指针",
+  queue: "队列的槽位与队头队尾指针",
+  graph: "图节点、边与遍历顺序",
+  tree: "二叉树节点与父子边",
+  hash: "哈希表桶、冲突链与除留余数法公式",
+  heap: "二叉堆的完全二叉树与数组表示",
+  "union-find": "并查集森林与 parent、rank 数组",
+};
+
 export function AnimationCanvas({
   frame,
   previous,
@@ -83,19 +95,7 @@ export function AnimationCanvas({
               ? scene.width > 430 ? scene.width : undefined
               : capacity > 8 ? scene.width : undefined }}
         role="img"
-        aria-label={
-          kind === "linked-list"
-            ? "链表节点及 next 指针"
-            : kind === "tree"
-              ? "二叉树节点与父子边"
-              : kind === "hash"
-                ? "哈希表桶、冲突链与除留余数法公式"
-                : kind === "heap"
-                  ? "二叉堆的完全二叉树与数组表示"
-                  : kind === "union-find"
-                    ? "并查集森林与 parent、rank 数组"
-                    : "数组分区、比较与交换动画"
-        }
+        aria-label={LABELS[kind]}
       >
         <defs>
           <marker
@@ -111,6 +111,15 @@ export function AnimationCanvas({
           </marker>
         </defs>
         {scene.formula && <SceneFormula formula={scene.formula} />}
+        {scene.container && (
+          <rect
+            {...scene.container}
+            rx="10"
+            fill="#f8fafc"
+            stroke="#cbd5e1"
+            strokeDasharray="6 4"
+          />
+        )}
         {scene.range && (
           <rect
             {...scene.range}
@@ -124,7 +133,7 @@ export function AnimationCanvas({
           <rect
             key={index}
             {...slot}
-            rx="8"
+            rx={scene.vertical ? "6" : "8"}
             fill="#f8fafc"
             stroke="#e2e8f0"
             strokeDasharray="3 3"
@@ -161,7 +170,7 @@ export function AnimationCanvas({
               className="fill-muted-foreground font-mono"
               fontSize="12"
             >
-              {slot.index}
+              {slot.label}
             </text>
           </Annotation>
         ))}
@@ -236,6 +245,18 @@ export function AnimationCanvas({
             times={scene.times}
             arrowId={arrowId}
           />
+        ))}
+        {scene.captions.map((caption) => (
+          <text
+            key={caption.text}
+            x={caption.x}
+            y={caption.y}
+            textAnchor={caption.anchor}
+            className="fill-muted-foreground font-mono"
+            fontSize="11"
+          >
+            {caption.text}
+          </text>
         ))}
         {scene.nullHead && (
           <text

@@ -197,6 +197,7 @@ export function ScenePointer({
 }: ClockProps & { pointer: AnimationScene["pointers"][number] }) {
   const x = useTransform(progress, (p) => sampleTrack(pointer.x, times, p));
   const y = useTransform(progress, (p) => sampleTrack(pointer.y, times, p));
+  const right = pointer.placement === "right";
   return (
     <Annotation
       pointer={pointer.name}
@@ -205,6 +206,18 @@ export function ScenePointer({
       revealAfterMotion={pointer.revealAfterMotion}
     >
       <motion.g style={{ x, y }}>
+        {right && (
+          <rect
+            x="0"
+            y="-11"
+            width={pointer.width}
+            height="22"
+            rx="5"
+            fill={palette[pointer.tone].fill}
+            stroke={palette[pointer.tone].stroke}
+            strokeWidth="1.5"
+          />
+        )}
         {pointer.placement === "below" && (
           <rect
             x={-pointer.width / 2}
@@ -216,13 +229,16 @@ export function ScenePointer({
           />
         )}
         <text
-          textAnchor="middle"
+          x={right ? 8 : 0}
+          y={right ? 4 : 0}
+          textAnchor={right ? "start" : "middle"}
           fill={palette[pointer.tone].stroke}
           fontFamily="monospace"
           fontSize={pointer.fontSize}
         >
           {pointer.name}
         </text>
+        {right && <path d="M 1 -4 L -7 0 L 1 4 Z" fill={palette[pointer.tone].stroke} />}
         {pointer.placement === "below" && (
           <path
             d="M -3 -21 L 0 -26 L 3 -21 Z"

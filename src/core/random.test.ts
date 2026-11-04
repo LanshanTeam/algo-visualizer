@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { queue } from "../topics/linear/queue";
 import { graphTraversal } from "../topics/graph/graph-traversal";
 import { dijkstra } from "../topics/graph/dijkstra";
-import { randomValues } from "./random";
+import { randomCount, randomValues } from "./random";
 
 describe("专题随机数据", () => {
   it("为要求升序的专题生成升序数据，并遵守容量", () => {
@@ -28,4 +29,23 @@ describe("专题随机数据", () => {
     }
   });
 
+
+  it("定长结构的随机条数要给插入留空位", () => {
+    // 顺序表容量 8：留一个空位
+    expect(randomCount({ limit: 8, capacity: 8 })).toBe(7);
+    // 栈容量 6：只能 5 个，否则一入栈就溢出
+    expect(randomCount({ limit: 6, capacity: 6 })).toBe(5);
+    // 队列 front = 3：只剩 4 个槽位可写
+    expect(randomCount({ limit: 8, capacity: 8, reserved: 3 })).toBe(4);
+    // front 顶到末端时至少给 1 条
+    expect(randomCount({ limit: 8, capacity: 8, reserved: 7 })).toBe(1);
+    // 没有定长容量时沿用数据上限
+    expect(randomCount({ limit: 5 })).toBe(5);
+  });
+
+  it("队列在非零 front 下随机生成的数据仍能入队", () => {
+    const values = randomValues({ limit: 8, capacity: 8 }, 2);
+    expect(values.length).toBeLessThanOrEqual(5);
+    expect(() => queue.trace({ values, operation: "enqueue", index: 2, value: 31 })).not.toThrow();
+  });
 });

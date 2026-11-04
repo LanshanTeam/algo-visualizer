@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import type { Frame } from "../core/types";
+import type { Frame, ImplementedSceneKind } from "../core/types";
 import {
   connectionPathAt,
   createAnimationScene,
@@ -8,13 +8,8 @@ import {
 import { hashChainCapacityOf } from "./hash-layout";
 import { treeDepthOf } from "./tree-layout";
 
-export type SceneKind =
-  | "array"
-  | "linked-list"
-  | "tree"
-  | "hash"
-  | "heap"
-  | "union-find";
+/** 测试里可用的布局就是渲染器已实现的布局。 */
+export type SceneKind = ImplementedSceneKind;
 export type Box = { x: number; y: number; width: number; height: number };
 export function overlaps(a: Box, b: Box) {
   return (
@@ -211,15 +206,28 @@ export function verifyScene(
       for (const node of nodes)
         if (overlaps(node, scene.formula))
           throw new Error(`${frame.anchor} 公式条压住节点 ${node.id}`);
-    const labels = scene.pointers.map((pointer) => ({
-      x: sampleTrack(pointer.x, scene.times, t) - pointer.width / 2,
-      y:
-        sampleTrack(pointer.y, scene.times, t) -
-        (pointer.placement === "above" ? 12 : 27),
-      width: pointer.width,
-      height: pointer.placement === "above" ? 16 : 34,
-      hidden: pointer.revealAfterMotion,
-    }));
+    const labels = scene.pointers.map((pointer) => {
+      const px = sampleTrack(pointer.x, scene.times, t);
+      const py = sampleTrack(pointer.y, scene.times, t);
+      return {
+        x: pointer.placement === "right" ? px : px - pointer.width / 2,
+        y:
+          py -
+          (pointer.placement === "above"
+            ? 12
+            : pointer.placement === "right"
+              ? 11
+              : 27),
+        width: pointer.width,
+        height:
+          pointer.placement === "above"
+            ? 16
+            : pointer.placement === "right"
+              ? 22
+              : 34,
+        hidden: pointer.revealAfterMotion,
+      };
+    });
     for (let a = 0; a < labels.length; a++)
       for (let b = a + 1; b < labels.length; b++)
         if (overlaps(labels[a], labels[b])) throw new Error("指针标注相交");
@@ -406,8 +414,13 @@ export function verifyScene(
   }
   return scene;
 }
-export function verifyTrace(frames: Frame[], kind: SceneKind) {
-  const capacity = Math.max(...frames.map((frame) => frame.items.length));
+export function verifyTrace(
+  frames: Frame[],
+  kind: SceneKind,
+  capacityOverride?: number,
+) {
+  const capacity =
+    capacityOverride ?? Math.max(...frames.map((frame) => frame.items.length));
   const treeDepth =
     kind === "tree" ? Math.max(...frames.map(treeDepthOf)) : 0;
   const hashChainCapacity =

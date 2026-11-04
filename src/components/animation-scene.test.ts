@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
+import { ARRAY_CAPACITY, arrayTrace } from "../topics/linear/array";
 import { linkedListTrace } from "../topics/linear/linked-list";
+import { QUEUE_CAPACITY, queueTrace } from "../topics/linear/queue";
+import { STACK_CAPACITY, stackTrace } from "../topics/linear/stack";
 import { quickSortTrace } from "../topics/sorting-searching/quick-sort";
-import { connectionPathAt, createAnimationScene } from "./animation-scene";
+import {
+  connectionPathAt,
+  createAnimationScene,
+  sampleTrack,
+} from "./animation-scene";
 import { verifyScene, verifyTrace } from "./animation-scene.test-helpers";
 
 describe("紧凑场景与统一时钟", () => {
@@ -138,5 +145,161 @@ describe("紧凑场景与统一时钟", () => {
     });
     const existing = reverse.nodes.find((node) => node.id === 1)!;
     expect(existing.x[0]).toBe(existing.x[1]);
+  });
+  it("链表指针在节点让位、绕过时始终跟着目标节点", () => {
+    for (const operation of ["insert", "delete"] as const)
+      for (const index of [0, 1, 3]) {
+        const frames = linkedListTrace(
+          [12, 24, 36, 48],
+          operation,
+          index,
+          31,
+        );
+        for (let step = 1; step < frames.length; step++)
+          // 正向与回退都要一致：指针不能直接跳到目标槽位
+          for (const [frame, previous] of [
+            [frames[step], frames[step - 1]],
+            [frames[step - 1], frames[step]],
+          ] as const) {
+            const scene = createAnimationScene({
+              frame,
+              previous,
+              kind: "linked-list",
+              capacity: 5,
+            });
+            for (const pointer of scene.pointers) {
+              const node = scene.nodes.find(
+                (entry) => entry.id === pointer.targetId,
+              )!;
+              for (let tick = 0; tick <= 10; tick++) {
+                const t = tick / 10;
+                expect(sampleTrack(pointer.x, scene.times, t)).toBeCloseTo(
+                  sampleTrack(node.x, scene.times, t) + node.width / 2,
+                  6,
+                );
+              }
+            }
+          }
+      }
+  });
+});
+
+describe("线性结构其余布局", () => {
+  for (const operation of ["insert", "delete", "find"] as const)
+    it(`顺序表 ${operation} 的移动都在画布内`, () => {
+      for (const index of operation === "insert" ? [0, 2, 4, 5] : [0, 2, 4])
+        verifyTrace(
+          arrayTrace([10, 20, 30, 40, 50], operation, index, 9),
+          "array",
+          ARRAY_CAPACITY,
+        );
+    });
+  it("顺序表始终绘制固定容量的空槽位", () => {
+    const frames = arrayTrace([10, 20, 30], "delete", 0, 0);
+    const scene = createAnimationScene({
+      frame: frames[0],
+      kind: "array",
+      capacity: ARRAY_CAPACITY,
+    });
+    expect(scene.slots).toHaveLength(ARRAY_CAPACITY);
+    expect(scene.slots[3].x).toBeGreaterThan(scene.slots[2].x);
+  });
+  for (const operation of ["push", "pop", "peek"] as const)
+    it(`栈 ${operation} 的槽位与 top 标注不冲突`, () => {
+      for (const values of [
+        [],
+        [7],
+        [1, 2, 3],
+        Array.from({ length: STACK_CAPACITY }, (_, i) => i * 10),
+      ])
+        verifyTrace(stackTrace(values, operation, 55), "stack", STACK_CAPACITY);
+    });
+  it("栈是竖排，槽位自下而上堆叠", () => {
+    const scene = createAnimationScene({
+      frame: stackTrace([1, 2, 3], "push", 4)[0],
+      kind: "stack",
+      capacity: STACK_CAPACITY,
+    });
+    expect(scene.vertical).toBe(true);
+    expect(scene.slots[0].y).toBeGreaterThan(scene.slots[5].y);
+    expect(scene.nodes.map((node) => node.y[0])).toEqual([158, 128, 98]);
+    expect(scene.pointers[0].placement).toBe("right");
+    expect(scene.pointers[0].targetId).toBe(2);
+  });
+  it("栈满与栈空只提示，不产生移动", () => {
+    const full = Array.from({ length: STACK_CAPACITY }, (_, i) => i);
+    const scene = verifyScene(
+      stackTrace(full, "push", 9).at(-1)!,
+      undefined,
+      "stack",
+      STACK_CAPACITY,
+    );
+    expect(scene.hasMotion).toBe(false);
+    expect(scene.nodes).toHaveLength(STACK_CAPACITY);
+  });
+  for (const operation of ["enqueue", "dequeue", "peek"] as const)
+    it(`队列 ${operation} 的元素始终落在槽位内`, () => {
+      const cases: Array<[number[], number]> = [
+        [[], 0],
+        [[14], 0],
+        [[14, 28, 42], 0],
+        [[7, 7, 7, 7, 7], 0],
+        [[7, 7, 7, 7, 7], 3],
+      ];
+      for (const [values, front] of cases)
+        verifyTrace(
+          queueTrace(values, operation, 9, QUEUE_CAPACITY, front),
+          "queue",
+          QUEUE_CAPACITY,
+        );
+    });
+  it("初始 front 偏移时元素仍落在 2..7 这些槽位上", () => {
+    const frames = queueTrace([1, 2, 3, 4, 5, 6], "enqueue", 7, 8, 2);
+    const scene = verifyScene(
+      frames[0],
+      undefined,
+      "queue",
+      QUEUE_CAPACITY,
+    );
+    expect(scene.nodes.map((node) => node.x[0])).toEqual(
+      [2, 3, 4, 5, 6, 7].map((slot) => scene.slots[slot].x),
+    );
+  });
+  it("队列出队只移动 front，其余元素原地不动", () => {
+    const frames = queueTrace([14, 28, 42], "dequeue", 0);
+    const index = frames.findIndex((frame) => frame.anchor === "dequeue");
+    const scene = verifyScene(
+      frames[index],
+      frames[index - 1],
+      "queue",
+      QUEUE_CAPACITY,
+    );
+    expect(scene.hasMotion).toBe(true);
+    for (const id of [1, 2]) {
+      const node = scene.nodes.find((entry) => entry.id === id)!;
+      expect(new Set(node.x).size).toBe(1);
+      expect(new Set(node.y).size).toBe(1);
+    }
+    // 队头槽位空出后，剩余元素仍占原来的槽位：front 右移恰好抵消下标左移。
+    const front = Number(frames[index].variables.front);
+    expect(front).toBe(1);
+    expect(scene.indices.map((entry) => entry.label)).toEqual(
+      Array.from({ length: QUEUE_CAPACITY }, (_, slot) => String(slot)),
+    );
+    expect(scene.nodes.map((node) => node.x[0])).toEqual([
+      scene.slots[1].x,
+      scene.slots[2].x,
+    ]);
+  });
+  it("队列能画出被空出和尚未使用的槽位", () => {
+    const frames = queueTrace([14, 28], "dequeue", 0);
+    const scene = createAnimationScene({
+      frame: frames.at(-1)!,
+      kind: "queue",
+      capacity: QUEUE_CAPACITY,
+    });
+    expect(scene.slots).toHaveLength(QUEUE_CAPACITY);
+    expect(scene.nodes).toHaveLength(1);
+    expect(scene.nodes[0].x[0]).toBe(scene.slots[1].x);
   });
 });

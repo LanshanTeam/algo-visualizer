@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { parseValues } from "../../core/trace";
+import { clampIndex, parseValues } from "../../core/trace";
 import type { Language, TraceInput } from "../../core/types";
 import type { ReadyTopic } from "../../topics/types";
 
@@ -16,22 +16,34 @@ export function useTopicTrace(topic: ReadyTopic) {
     "";
   const initialValue = controls.value?.defaultValue ?? DEFAULT_VALUE;
   const initialValue2 = controls.value2?.defaultValue ?? DEFAULT_VALUE;
-  const [language, setLanguage] = useState<Language>("C");
-  const [values, setValues] = useState(() =>
-    controls.parseInput
-      ? controls.parseInput(initialText, controls.limit)
-      : controls.defaultValues,
+  const initialValues = useMemo(
+    () =>
+      controls.parseInput
+        ? controls.parseInput(initialText, controls.limit)
+        : controls.defaultValues,
+    [controls, initialText],
   );
+  // 专题可以自带初始索引（队列的初始 front 默认 0），越界时先夹住再建轨迹。
+  const initialIndex = useMemo(() => {
+    const base = controls.index?.default ?? DEFAULT_INDEX;
+    if (!controls.index) return base;
+    return clampIndex(
+      base,
+      controls.index.max({ length: initialValues.length, operation: initialOperation }),
+    );
+  }, [controls, initialOperation, initialValues]);
+  const [language, setLanguage] = useState<Language>("C");
+  const [values, setValues] = useState(initialValues);
   const [input, setInput] = useState(initialText);
   const [operation, setOperation] = useState(initialOperation);
-  const [index, setIndex] = useState(DEFAULT_INDEX);
+  const [index, setIndex] = useState(initialIndex);
   const [value, setValue] = useState(initialValue);
   const [value2, setValue2] = useState(initialValue2);
   const [frames, setFrames] = useState(() =>
     topic.trace({
-      values,
+      values: initialValues,
       operation: initialOperation,
-      index: DEFAULT_INDEX,
+      index: initialIndex,
       value: initialValue,
       value2: initialValue2,
     }),
@@ -47,8 +59,12 @@ export function useTopicTrace(topic: ReadyTopic) {
   const [copied, setCopied] = useState(false);
   const frame = frames[step];
   const capacity = useMemo(
-    () => Math.max(...frames.map((frame) => frame.items.length)),
-    [frames],
+    () =>
+      Math.max(
+        controls.capacity ?? 0,
+        ...frames.map((frame) => frame.items.length),
+      ),
+    [controls.capacity, frames],
   );
   const code = useMemo(
     () => topic.code(language, operation),
@@ -75,10 +91,17 @@ export function useTopicTrace(topic: ReadyTopic) {
     nextValue2 = value2,
   ) {
     try {
+      // 数据或操作变了以后旧索引可能越界（队列的前部槽位被占满、删除时上界变小），
+      // 先夹到合法区间，保证输入框和画布用的是同一个值。
+      const max = controls.index?.max({
+        length: nextValues.length,
+        operation: nextOperation,
+      });
+      const clamped = max === undefined ? nextIndex : clampIndex(nextIndex, max);
       const next: TraceInput = {
         values: nextValues,
         operation: nextOperation,
-        index: nextIndex,
+        index: clamped,
         value: nextValue,
         value2: nextValue2,
       };
@@ -90,6 +113,7 @@ export function useTopicTrace(topic: ReadyTopic) {
       setStepMode("manual");
       setAnimating(false);
       setValues(nextValues);
+      setIndex(clamped);
       setError("");
       return true;
     } catch (cause) {

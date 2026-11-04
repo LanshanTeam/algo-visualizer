@@ -1,35 +1,16 @@
-import { Boxes, Layers, ListOrdered } from "lucide-react";
-import { plannedTopic, type TopicDefinition } from "../types";
+import type { TopicDefinition } from "../types";
+import { array } from "./array";
 import { linkedList } from "./linked-list";
+import { queue } from "./queue";
+import { stack } from "./stack";
 
 /**
  * 一维线性结构专题：数组、链表、栈、队列。
- * 把 `plannedTopic(...)` 换成同名模块导出的 ready 定义即可上线。
+ * 顺序与侧边栏一致：从最基础的连续存储，到链式存储，再到受限的线性表。
  */
 export const linearTopics: TopicDefinition[] = [
-  plannedTopic({
-    id: "array",
-    group: "linear",
-    title: "顺序表（数组）",
-    badge: "O(1)",
-    summary: "连续内存与随机访问；插入删除需要成段移动元素。",
-    icon: Boxes,
-  }),
+  array,
   linkedList,
-  plannedTopic({
-    id: "stack",
-    group: "linear",
-    title: "栈",
-    badge: "LIFO",
-    summary: "只在一端压入和弹出，后进先出。",
-    icon: Layers,
-  }),
-  plannedTopic({
-    id: "queue",
-    group: "linear",
-    title: "队列",
-    badge: "FIFO",
-    summary: "队尾入队、队头出队，先进先出。",
-    icon: ListOrdered,
-  }),
+  stack,
+  queue,
 ];

@@ -9,6 +9,8 @@ export type Language = "C" | "C++" | "Python" | "Go" | "Java" | "Rust";
 export type SceneKind =
   | "array"
   | "linked-list"
+  | "stack"
+  | "queue"
   | "graph"
   | "tree"
   | "hash"
@@ -19,6 +21,8 @@ export type SceneKind =
 export type ImplementedSceneKind =
   | "array"
   | "linked-list"
+  | "stack"
+  | "queue"
   | "graph"
   | "tree"
   | "hash"

@@ -28,6 +28,13 @@ export interface IndexControl {
   label: string;
   /** 合法上界；由专题按当前数据与操作决定。 */
   max: (context: { length: number; operation: string }) => number;
+  /** 初始值；缺省用工作台统一的下标默认值。 */
+  default?: number;
+  /**
+   * 该索引会占用槽位（例如队列的初始 front 挤占左侧槽位）。
+   * 置为 true 时，随机数据要给索引留出空间，否则会生成装不下的元素。
+   */
+  occupiesSlots?: boolean;
 }
 
 /** 操作台的输入控件声明。缺省即不渲染。 */
@@ -41,12 +48,18 @@ export interface ControlSchema {
   parseInput?: (text: string, limit?: number) => number[];
   /** 数据规模上限，默认 12。 */
   limit?: number;
+  /**
+   * 画布上固定展示的槽位数（定长容量）。
+   * 缺省时按所有帧中的最大元素数绘制；顺序表、定长栈、顺序队列用它声明容量。
+   */
+  capacity?: number;
   /** 初始选中的操作；缺省为 operations 的第一项。 */
   defaultOperation?: string;
   /** 是否显示随机数据按钮，默认显示。 */
   randomizable?: boolean;
   /** 随机数据保持升序；手工输入仍由专题校验，不自动排序。 */
   sorted?: boolean;
+  /** 专题自定义随机数据；缺省时按数据上限、容量与已占槽位生成。 */
   randomValues?: () => number[];
   operations?: readonly { id: string; label: string }[];
   index?: IndexControl;
