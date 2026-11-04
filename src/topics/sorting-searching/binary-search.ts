@@ -3,6 +3,7 @@ import { parseCode } from "../../core/code";
 import type { Frame } from "../../core/types";
 import type { ReadyTopic } from "../types";
 import { templates } from "./binary-search-templates";
+import { binarySearchTheory } from "./binary-search-theory";
 
 export function binarySearchTrace(values: number[], target: number): Frame[] {
   if (!Number.isInteger(target) || target < -999 || target > 999) {
@@ -57,11 +58,7 @@ export const binarySearch: ReadyTopic = {
   status: "ready", scene: "array", icon: Search,
   controls: { dataLabel: "升序数组", sorted: true, defaultValues: [2, 5, 8, 12, 16, 31, 38], value: { label: "目标值" } },
   legend: [{ label: "当前中点", tone: "active" }, { label: "待查找", tone: "idle" }, { label: "匹配位置", tone: "settled" }],
-  theory: [
-    { title: "有序前提", body: "数组必须按非递减顺序排列。比较中点与目标，利用有序性排除不可能包含目标的一半。" },
-    { title: "闭区间不变量", body: "若目标存在，则仍在 [low, high] 内。中点匹配时返回索引；重复值返回任意匹配，不保证首次出现。low > high 时返回 -1。" },
-    { title: "复杂度", body: "二分查找最好时间 O(1)，平均与最坏 O(log n)，额外空间 O(1)。演示先用 O(n) 验证升序，再运行模板中的查找；可视化帧存储不计入算法空间。" },
-  ],
+  theory: binarySearchTheory,
   trace: ({ values, value }) => binarySearchTrace(values, value),
   code: (language) => parseCode(templates[language]),
 };

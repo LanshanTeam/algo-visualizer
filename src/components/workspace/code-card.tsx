@@ -4,6 +4,7 @@ import { Card, CardHeader } from "../ui/card";
 import { ScrollArea, ScrollBar } from "../ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { IconButton } from "./icon-button";
+import { TheoryContent } from "../theory-content";
 import { cn } from "../../lib/utils";
 import { languages } from "../../core/code";
 import type { Language } from "../../core/types";
@@ -116,12 +117,7 @@ export function CodeCard({
             value="theory"
             className="mt-0 grid content-start gap-6 px-6 pb-6 pt-0 text-sm leading-relaxed md:grid-cols-2 xl:min-h-0 xl:flex-1 xl:grid-cols-1 xl:overflow-y-auto"
           >
-            {topic.theory?.map((block) => (
-              <article className="space-y-2" key={block.title}>
-                <h3 className="font-medium">{block.title}</h3>
-                <p className="text-muted-foreground">{block.body}</p>
-              </article>
-            ))}
+            <TheoryContent blocks={topic.theory ?? []} />
           </TabsContent>
         )}
       </Tabs>

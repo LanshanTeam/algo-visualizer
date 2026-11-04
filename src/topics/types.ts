@@ -66,7 +66,10 @@ export interface ControlSchema {
 
 export interface TheoryBlock {
   title: string;
+  icon?: ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
   body: string;
+  items?: readonly string[];
+  rows?: readonly { label: string; value: string }[];
 }
 
 interface TopicBase {

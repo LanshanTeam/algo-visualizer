@@ -1,4 +1,10 @@
-import { ArrowDownUp } from "lucide-react";
+import {
+  ArrowDownUp,
+  BookOpen,
+  Split,
+  Gauge,
+  TriangleAlert,
+} from "lucide-react";
 import { parseCode } from "../../core/code";
 import type { Frame } from "../../core/types";
 import type { ReadyTopic } from "../types";
@@ -125,16 +131,41 @@ export const quickSort: ReadyTopic = {
   ],
   theory: [
     {
-      title: "分区与递归",
-      body: "以末尾元素为基准，将较小元素移到左侧。基准归位后，递归排序两侧，直到区间长度不超过 1。",
+      title: "核心思路",
+      icon: BookOpen,
+      body: "从区间 [low, high] 挑末尾元素 a[high] 当标尺（基准 pivot），把比它小的数拨到左边、其余留在右边，最后把基准换到交界处。这样基准就一步到位落在了最终排好序的位置，再递归排左右两边，直到子区间长度不超过 1（low >= high）。",
     },
     {
-      title: "分区不变量",
-      body: "Lomuto 分区中，[low, i) 均小于基准，[i, j) 均不小于基准。扫描结束后交换 a[i] 与基准。",
+      title: "双指针怎么分区",
+      icon: Split,
+      body: "Lomuto 分区中，j 是向右探路的扫描指针，i 是“小于基准区”的下一个空位，基准暂存在 high：",
+      items: [
+        "遇到小元素收进左边：若 a[j] < pivot，交换 a[i] 与 a[j] 并令 i++；否则直接跳过。",
+        "扫描中维持三段：[low, i) 全小于 pivot，[i, j) 全大于或等于 pivot，[j, high) 待扫描。",
+        "基准归位与递归：j 扫到 high 时交换 a[i] 与 a[high]，基准锁死在 i，随后递归排 [low, i - 1] 和 [i + 1, high]。",
+      ],
     },
     {
       title: "复杂度",
-      body: "平均时间 O(n log n)，最坏 O(n²)；平均递归空间 O(log n)，最坏 O(n)。此实现不稳定，有序或重复值较多时可能退化。",
+      icon: Gauge,
+      body: "设元素总数为 n，当前区间长度为 m。单次分区扫一遍耗时 O(m)；若每次划分较均匀，递归约 log n 层，总时间 O(n log n)。空间仅计递归调用栈，不含动画快照。",
+      rows: [
+        { label: "单次分区", value: "O(m)" },
+        { label: "最好 / 平均时间", value: "O(n log n)" },
+        { label: "最坏时间", value: "O(n²)" },
+        { label: "平衡 / 平均递归栈", value: "O(log n)" },
+        { label: "最坏递归栈", value: "O(n)" },
+      ],
+    },
+    {
+      title: "易错点与退化取舍",
+      icon: TriangleAlert,
+      body: "本演示固定选末尾基准且原地交换，实现最简，但需注意边界与退化：",
+      items: [
+        "别把基准再算进去：扫描循环只到 j < high；递归区间必须跳过已归位的 i。",
+        "极端退化 O(n²)：已升序（如 1, 2, 3, 4）或全相等（如 5, 5, 5, 5）时，每轮只归位 1 个端点元素。工程上常用“随机选基准”或“三路分区”避免。",
+        "不稳定性：跨位置交换可能改变相等元素的先后顺序；若要求稳定排序，应改用归并排序。",
+      ],
     },
   ],
   trace: ({ values }) => quickSortTrace(values),
