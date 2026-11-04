@@ -1,9 +1,6 @@
-import { useId, useLayoutEffect, useMemo, useRef } from "react";
+import { useId, useMemo } from "react";
 import {
   AnimatePresence,
-  animate,
-  useMotionValue,
-  useReducedMotion,
 } from "motion/react";
 import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 import { createAnimationScene } from "./animation-scene";
@@ -12,6 +9,7 @@ import {
   Annotation,
   SceneBadge,
   SceneBucket,
+  AuxiliaryNode,
   SceneEdge,
   SceneFormula,
   SceneHeapCell,
@@ -21,6 +19,7 @@ import {
   SceneUnionCell,
   SceneUnionRowLabel,
 } from "./canvas-primitives";
+import { useAnimationClock } from "./workspace/use-animation-clock";
 
 export function AnimationCanvas({
   frame,
@@ -43,7 +42,8 @@ export function AnimationCanvas({
   paused?: boolean;
   onAnimatingChange?: (active: boolean) => void;
 }) {
-  const reduced = useReducedMotion();
+  const linked = kind === "linked-list";
+  const array = kind === "array";
   const arrowId = useId().replace(/:/g, "");
   const scene = useMemo(
     () =>
@@ -57,61 +57,31 @@ export function AnimationCanvas({
       }),
     [frame, previous, kind, capacity, treeDepth, hashChainCapacity],
   );
-  const progress = useMotionValue(1);
-  const last = useRef<{ frame?: Frame; previous?: Frame }>({});
-  useLayoutEffect(() => {
-    const changed =
-      last.current.frame !== frame || last.current.previous !== previous;
-    last.current = { frame, previous };
-    if (reduced || !scene.hasMotion) {
-      progress.set(1);
-      onAnimatingChange?.(false);
-      return;
-    }
-    if (changed) progress.set(0);
-    const remaining = 1 - progress.get();
-    if (remaining <= 0) {
-      onAnimatingChange?.(false);
-      return;
-    }
-    onAnimatingChange?.(true);
-    if (paused) return;
-    const controls = animate(progress, 1, {
-      duration: duration * remaining,
-      ease: "linear",
-      onComplete: () => onAnimatingChange?.(false),
-    });
-    return () => {
-      controls.stop();
-      onAnimatingChange?.(false);
-    };
-  }, [
+  const progress = useAnimationClock({
     frame,
     previous,
+    hasMotion: scene.hasMotion,
     duration,
     paused,
-    reduced,
-    scene.hasMotion,
-    progress,
     onAnimatingChange,
-  ]);
+  });
 
   return (
-    <ScrollArea className="w-full">
+    <ScrollArea className={array ? "w-full [&_[data-radix-scroll-area-viewport]>div]:!block" : "w-full"}>
       <svg
         data-animation-stage
         viewBox={`0 0 ${scene.width} ${scene.height}`}
-        className="block h-auto w-full min-w-[430px] sm:min-w-0"
-        style={{
-          minWidth:
-            kind === "hash" || kind === "heap" || kind === "union-find"
-              ? scene.width > 430
-                ? scene.width
-                : undefined
-              : capacity > 8
-                ? scene.width
-                : undefined,
-        }}
+        width={scene.width}
+        height={scene.height}
+        preserveAspectRatio={linked ? "xMinYMin meet" : "xMidYMid meet"}
+        className={array ? "mx-auto block h-auto min-w-0" : "block h-auto w-full min-w-[430px] sm:min-w-0"}
+        // Ordinary arrays fit the viewport, including their boundary pointers.
+        // Only long inputs retain an enlarged minimum width and internal scrolling.
+        style={array
+          ? { width: "100%", minWidth: capacity > 8 ? scene.width * 1.2 : undefined, maxWidth: scene.width * 1.2 }
+          : { minWidth: ["hash", "heap", "union-find"].includes(kind)
+              ? scene.width > 430 ? scene.width : undefined
+              : capacity > 8 ? scene.width : undefined }}
         role="img"
         aria-label={
           kind === "linked-list"
@@ -160,6 +130,23 @@ export function AnimationCanvas({
             strokeDasharray="3 3"
           />
         ))}
+        {scene.heldLabel && (
+          <text x={scene.heldLabel.x} y={scene.heldLabel.y} fontSize="12" className="fill-muted-foreground">{scene.heldLabel.text}</text>
+        )}
+        {scene.auxiliary && (
+          <g data-auxiliary-row>
+            <text x={scene.auxiliary.labelX} y={scene.auxiliary.labelY} fontSize="12" className="fill-muted-foreground">{scene.auxiliary.label}</text>
+            {scene.auxiliary.slots.map((slot, index) => (
+              <g key={index}>
+                <rect data-auxiliary-slot={index} {...slot} rx="8" fill="#f8fafc" stroke="#e2e8f0" strokeDasharray="3 3" />
+                <text x={slot.x + slot.width / 2} y={slot.y + slot.height + 16} textAnchor="middle" fontSize="12" className="fill-muted-foreground font-mono">{index}</text>
+              </g>
+            ))}
+            {scene.auxiliary.nodes.map(node => (
+              <AuxiliaryNode key={`${node.index}-${node.id}`} node={node} progress={progress} times={scene.times} />
+            ))}
+          </g>
+        )}
         {scene.indices.map((slot) => (
           <Annotation
             key={slot.index}

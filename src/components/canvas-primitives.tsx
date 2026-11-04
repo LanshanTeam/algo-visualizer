@@ -15,6 +15,8 @@ export const palette = {
   idle: { stroke: "#cbd5e1", fill: "#fff" },
 };
 export type ClockProps = { progress: MotionValue<number>; times: number[] };
+const nodeRadius = 8;
+const nodeFontSize = (value: number) => (Math.abs(value) > 99 ? 19 : 25);
 
 export function SceneNode({
   node,
@@ -84,6 +86,19 @@ export function SceneNode({
       >
         {node.value}
       </text>
+    </motion.g>
+  );
+}
+
+/** Auxiliary copies are not primary identities; visibility uses the shared clock. */
+export function AuxiliaryNode({ node, progress, times }: ClockProps & {
+  node: NonNullable<AnimationScene["auxiliary"]>["nodes"][number];
+}) {
+  const opacity = useTransform(progress, p => sampleTrack(node.opacity, times, p));
+  return (
+    <motion.g data-auxiliary-node-id={node.id} transform={`translate(${node.x} ${node.y})`} style={{ opacity }}>
+      <rect width={node.width} height={node.height} rx={nodeRadius} fill={palette.active.fill} stroke={palette.active.stroke} />
+      <text x={node.width / 2} y="34" textAnchor="middle" fontFamily="monospace" fontSize={nodeFontSize(node.value)} fill="#1e293b">{node.value}</text>
     </motion.g>
   );
 }

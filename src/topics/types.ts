@@ -45,6 +45,9 @@ export interface ControlSchema {
   defaultOperation?: string;
   /** 是否显示随机数据按钮，默认显示。 */
   randomizable?: boolean;
+  /** 随机数据保持升序；手工输入仍由专题校验，不自动排序。 */
+  sorted?: boolean;
+  randomValues?: () => number[];
   operations?: readonly { id: string; label: string }[];
   index?: IndexControl;
   value?: {
