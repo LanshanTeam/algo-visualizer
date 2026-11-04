@@ -118,11 +118,13 @@ export function createAnimationScene({
     );
     const owner = track(id);
     const cell = position(frame, id);
-    // 竖排栈的 top 标注贴在单元格右侧，其余布局的标注贴在单元格下方。
-    const x = vertical
-      ? times.map(() => cell.x + nodeWidth + 10)
-      : above
-        ? owner.x.map((value) => value + nodeWidth / 2)
+    // 链表指针必须跟着目标节点走：插入让位、删除绕过时都不能瞬移到目标槽位，
+    // 所以横坐标取该节点自己的轨迹。数组与队列的槽位不动，按槽位定位即可；
+    // 竖排栈的 top 标注贴在单元格右侧。
+    const x = linked
+      ? owner.x.map((value) => value + nodeWidth / 2)
+      : vertical
+        ? owner.x.map((value) => value + nodeWidth + 10)
         : times.map(() => cell.x + nodeWidth / 2);
     const y = vertical
       ? owner.y.map((value) => value + nodeHeight / 2)

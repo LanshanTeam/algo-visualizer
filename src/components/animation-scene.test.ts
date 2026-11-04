@@ -4,7 +4,11 @@ import { linkedListTrace } from "../topics/linear/linked-list";
 import { QUEUE_CAPACITY, queueTrace } from "../topics/linear/queue";
 import { STACK_CAPACITY, stackTrace } from "../topics/linear/stack";
 import { quickSortTrace } from "../topics/sorting-searching/quick-sort";
-import { connectionPathAt, createAnimationScene } from "./animation-scene";
+import {
+  connectionPathAt,
+  createAnimationScene,
+  sampleTrack,
+} from "./animation-scene";
 import { verifyScene, verifyTrace } from "./animation-scene.test-helpers";
 
 describe("紧凑场景与统一时钟", () => {
@@ -142,6 +146,42 @@ describe("紧凑场景与统一时钟", () => {
     const existing = reverse.nodes.find((node) => node.id === 1)!;
     expect(existing.x[0]).toBe(existing.x[1]);
   });
+  it("链表指针在节点让位、绕过时始终跟着目标节点", () => {
+    for (const operation of ["insert", "delete"] as const)
+      for (const index of [0, 1, 3]) {
+        const frames = linkedListTrace(
+          [12, 24, 36, 48],
+          operation,
+          index,
+          31,
+        );
+        for (let step = 1; step < frames.length; step++)
+          // 正向与回退都要一致：指针不能直接跳到目标槽位
+          for (const [frame, previous] of [
+            [frames[step], frames[step - 1]],
+            [frames[step - 1], frames[step]],
+          ] as const) {
+            const scene = createAnimationScene({
+              frame,
+              previous,
+              kind: "linked-list",
+              capacity: 5,
+            });
+            for (const pointer of scene.pointers) {
+              const node = scene.nodes.find(
+                (entry) => entry.id === pointer.targetId,
+              )!;
+              for (let tick = 0; tick <= 10; tick++) {
+                const t = tick / 10;
+                expect(sampleTrack(pointer.x, scene.times, t)).toBeCloseTo(
+                  sampleTrack(node.x, scene.times, t) + node.width / 2,
+                  6,
+                );
+              }
+            }
+          }
+      }
+  });
 });
 
 describe("线性结构其余布局", () => {
@@ -199,9 +239,32 @@ describe("线性结构其余布局", () => {
   });
   for (const operation of ["enqueue", "dequeue", "peek"] as const)
     it(`队列 ${operation} 的元素始终落在槽位内`, () => {
-      for (const values of [[], [14], [14, 28, 42], [7, 7, 7, 7, 7]])
-        verifyTrace(queueTrace(values, operation, 9), "queue", QUEUE_CAPACITY);
+      const cases: Array<[number[], number]> = [
+        [[], 0],
+        [[14], 0],
+        [[14, 28, 42], 0],
+        [[7, 7, 7, 7, 7], 0],
+        [[7, 7, 7, 7, 7], 3],
+      ];
+      for (const [values, front] of cases)
+        verifyTrace(
+          queueTrace(values, operation, 9, QUEUE_CAPACITY, front),
+          "queue",
+          QUEUE_CAPACITY,
+        );
     });
+  it("初始 front 偏移时元素仍落在 2..7 这些槽位上", () => {
+    const frames = queueTrace([1, 2, 3, 4, 5, 6], "enqueue", 7, 8, 2);
+    const scene = verifyScene(
+      frames[0],
+      undefined,
+      "queue",
+      QUEUE_CAPACITY,
+    );
+    expect(scene.nodes.map((node) => node.x[0])).toEqual(
+      [2, 3, 4, 5, 6, 7].map((slot) => scene.slots[slot].x),
+    );
+  });
   it("队列出队只移动 front，其余元素原地不动", () => {
     const frames = queueTrace([14, 28, 42], "dequeue", 0);
     const index = frames.findIndex((frame) => frame.anchor === "dequeue");
