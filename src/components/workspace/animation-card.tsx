@@ -18,6 +18,7 @@ import { IconButton } from "./icon-button";
 import { PlaybackBar } from "./playback-bar";
 import type { TopicTrace } from "./use-topic-trace";
 import type { LegendEntry, ReadyTopic } from "../../topics/types";
+import { randomCount } from "../../core/trace";
 
 const COLUMNS: Record<number, string> = {
   1: "grid-cols-1",
@@ -88,12 +89,13 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
             <IconButton
               label="随机数据"
               onClick={() => {
-                // 按专题的数据上限生成，并留一个空位给插入类操作；
-                // 否则栈这类定容结构会被随机数据直接填满。
-                const count = Math.max(
-                  1,
-                  Math.min(7, (controls.limit ?? 12) - 1),
-                );
+                // 条数按专题上限生成，并给插入类操作留一个空位；
+                // 队列的初始 front 本身占槽位，也要一起让出来。
+                const count = randomCount({
+                  limit: controls.limit,
+                  capacity: controls.capacity,
+                  reserved: controls.index?.occupiesSlots ? index : 0,
+                });
                 const next = Array.from(
                   { length: count },
                   () => Math.floor(Math.random() * 90) + 10,

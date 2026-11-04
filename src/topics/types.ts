@@ -28,6 +28,13 @@ export interface IndexControl {
   label: string;
   /** 合法上界；由专题按当前数据与操作决定。 */
   max: (context: { length: number; operation: string }) => number;
+  /** 初始值；缺省用工作台统一的下标默认值。 */
+  default?: number;
+  /**
+   * 该索引会占用槽位（例如队列的初始 front 挤占左侧槽位）。
+   * 置为 true 时，随机数据要给索引留出空间，否则会生成装不下的元素。
+   */
+  occupiesSlots?: boolean;
 }
 
 /** 操作台的输入控件声明。缺省即不渲染。 */

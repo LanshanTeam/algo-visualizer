@@ -1,5 +1,6 @@
 import { ListOrdered } from "lucide-react";
 import { parseCode } from "../../core/code";
+import { clampIndex } from "../../core/trace";
 import type { Frame } from "../../core/types";
 import type { ReadyTopic } from "../types";
 import { templates } from "./queue-templates";
@@ -12,6 +13,8 @@ const MAX_VALUE = 999;
  * 顺序队列的演示轨迹。
  * `front` 记录队头所在槽位，出队只移动 front，元素本身不搬家；
  * `startFront` 给出初始已空出的槽位数，用来复现 front > 0 且 rear 已到末端的情形。
+ * 超出可用范围的 startFront 会被夹到边界（元素占满时 front 只能是 0），
+ * 这样工作台换数据、点随机按钮时都不会因为旧 front 越界而报错。
  */
 export function queueTrace(
   values: number[],
@@ -23,20 +26,12 @@ export function queueTrace(
   if (values.length > capacity)
     throw new Error(`队列容量为 ${capacity}，请减少初始元素。`);
   if (
-    !Number.isInteger(startFront) ||
-    startFront < 0 ||
-    startFront + values.length > capacity
-  )
-    throw new Error(
-      `初始 front 须为 0 到 ${Math.max(0, capacity - values.length)} 的整数。`,
-    );
-  if (
     operation === "enqueue" &&
     (!Number.isInteger(value) || Math.abs(value) > MAX_VALUE)
   )
     throw new Error(`入队值须为 -${MAX_VALUE} 到 ${MAX_VALUE} 的整数。`);
   let items = values.map((item, id) => ({ id, value: item }));
-  let front = startFront;
+  let front = clampIndex(startFront, capacity - Math.max(values.length, 1));
   const frames: Frame[] = [];
   function emit(
     anchor: string,
@@ -161,7 +156,11 @@ export const queue: ReadyTopic = {
     ],
     index: {
       label: "初始 front",
-      max: ({ length }) => Math.max(0, QUEUE_CAPACITY - length),
+      default: 0,
+      occupiesSlots: true,
+      // 空队列时 front 也停在真实槽位上，不能顶到容量之外
+      max: ({ length }) =>
+        Math.max(0, QUEUE_CAPACITY - Math.max(length, 1)),
     },
     value: { label: "入队值", onlyFor: ["enqueue"] },
   },

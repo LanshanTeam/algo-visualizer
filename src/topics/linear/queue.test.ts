@@ -62,12 +62,48 @@ describe("顺序队列", () => {
     expect(last.variables).toMatchObject({ front: 4, rear: 5 });
     expect(last.items.map((item) => item.value)).toEqual([2, 3]);
   });
-  it("拒绝越界的初始 front", () => {
-    expect(() =>
-      queueTrace([1, 2, 3], "peek", 0, QUEUE_CAPACITY, 6),
-    ).toThrow();
-    expect(() => queueTrace([], "peek", 0, QUEUE_CAPACITY, -1)).toThrow();
-    expect(() => queueTrace([1], "peek", 0, QUEUE_CAPACITY, 1.5)).toThrow();
+  it("越界的初始 front 夹到合法区间，不中断演示", () => {
+    expect(
+      queueTrace([1, 2, 3], "peek", 0, QUEUE_CAPACITY, 6).at(-1)!.variables
+        .front,
+    ).toBe(QUEUE_CAPACITY - 3);
+    expect(
+      queueTrace([1], "peek", 0, QUEUE_CAPACITY, -4).at(-1)!.variables.front,
+    ).toBe(0);
+    expect(
+      queueTrace([1], "peek", 0, QUEUE_CAPACITY, 1.5).at(-1)!.variables.front,
+    ).toBe(1);
+  });
+  it("非零 front 配合随机数据仍能入队", () => {
+    const frames = queueTrace(
+      [10, 20, 30, 40, 50],
+      "enqueue",
+      31,
+      QUEUE_CAPACITY,
+      2,
+    );
+    expect(frames.at(-1)!.anchor).toBe("done");
+    expect(frames.at(-1)!.items).toHaveLength(6);
+    expect(frames.at(-1)!.narration).toContain("rear = 7");
+  });
+  it("工作台默认索引 2 搭配 7 个元素也不会报错", () => {
+    const input = {
+      values: [10, 20, 30, 40, 50, 60, 70],
+      operation: "enqueue",
+      index: 2,
+      value: 31,
+    };
+    expect(() => queue.trace(input)).not.toThrow();
+    // front 被夹到 1，7 个元素占满 1..7，入队失败是假溢出的正常结果
+    const frames = queue.trace(input);
+    expect(frames.at(-1)!.variables.front).toBe(1);
+    expect(frames.at(-1)!.anchor).toBe("check");
+  });
+  it("声明默认 front 与槽位占用，供工作台夹取索引", () => {
+    expect(queue.controls.index).toMatchObject({
+      default: 0,
+      occupiesSlots: true,
+    });
   });
   it("空队列出队与取队头只提示下溢", () => {
     for (const operation of ["dequeue", "peek"])
