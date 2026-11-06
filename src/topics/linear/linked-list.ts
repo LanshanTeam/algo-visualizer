@@ -1,4 +1,10 @@
-import { GitBranch } from "lucide-react";
+import {
+  BookOpen,
+  Gauge,
+  GitBranch,
+  Link2,
+  TriangleAlert,
+} from "lucide-react";
 import { parseCode } from "../../core/code";
 import type { Frame } from "../../core/types";
 import type { ReadyTopic } from "../types";
@@ -179,16 +185,47 @@ export const linkedList: ReadyTopic = {
   ],
   theory: [
     {
-      title: "链式存储",
-      body: "每个节点包含 value 和 next。head 指向首节点，尾节点的 next 为空；节点无需连续存储。",
+      title: "核心思路",
+      icon: BookOpen,
+      body: "单链表像一串用线索连接起来的车厢：每个节点既保存自己的值 value，也用 next 指向下一个节点。节点不必挨着存放，只要沿着 next 就能按顺序找到整条链。",
+      items: [
+        "head 指向第一个节点；空链表的 head 为空。最后一个节点的 next 也为空，表示链表结束。",
+        "单链表只能顺着 next 向前走，不能按下标直接跳到目标节点，也不能从当前节点直接找到前驱。",
+        "插入和删除的本质不是搬动元素，而是修改少量 next 指针，让节点接入或离开这条链。",
+      ],
     },
     {
-      title: "指针操作",
-      body: "插入时先连接新节点与后继，再更新前驱或 head。删除时让前驱绕过目标节点。索引从 0 开始。",
+      title: "指针怎么接",
+      icon: Link2,
+      body: "要在下标 i 插入新节点，先从头走 i 步定位，再处理指针。若已找到前驱 prev，插入顺序是：newNode.next = prev.next，然后 prev.next = newNode。",
+      items: [
+        "第一步先让新节点接住原来的后继，第二步再让前驱指向新节点；动画中的「先接入、后连接」正是在展示这个顺序。",
+        "删除 curr 时，让 prev.next = curr.next，前驱便绕过 curr，直接连到它的后继。",
+        "在表头插入或删除时没有前驱，需要单独更新 head。本页已处理这个边界，可以把下标设为 0 对照观察。",
+      ],
     },
     {
       title: "复杂度",
-      body: "查询及按索引增删为 O(n)；已知前驱时，指针修改为 O(1)。额外空间 O(1)。",
+      icon: Gauge,
+      body: "链表省去了移动元素，却增加了按位置查找的开销。要把「找位置」和「改指针」分开计算，不能只记一个 O(1)。",
+      rows: [
+        { label: "按下标查询", value: "O(n)" },
+        { label: "按下标插入或删除（含定位）", value: "O(n)" },
+        { label: "已知前驱后的插入或删除", value: "O(1)" },
+        { label: "在表头插入或删除", value: "O(1)" },
+        { label: "单次操作所需额外空间", value: "O(1)" },
+      ],
+    },
+    {
+      title: "易错点",
+      icon: TriangleAlert,
+      body: "指针一旦接错，后面的节点可能再也访问不到，因此操作顺序比代码长短更重要。",
+      items: [
+        "不要先执行 prev.next = newNode 再设置 newNode.next；此时原来的后继地址已经丢失，链表会断成两截。",
+        "定位前驱和定位目标节点不是一回事：在第 i 项前插入通常要找第 i - 1 项，但表头操作必须特判。",
+        "遍历时常用 curr = curr.next 前进；循环继续前必须确认 curr 非空，不能访问空节点的 next。",
+        "下标从 0 开始，查询或删除要求 i < length，插入则允许 i = length，即追加到表尾。",
+      ],
     },
   ],
   trace: ({ values, operation, index, value }) =>

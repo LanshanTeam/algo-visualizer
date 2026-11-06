@@ -1,4 +1,10 @@
-import { ListOrdered } from "lucide-react";
+import {
+  BookOpen,
+  Gauge,
+  ListOrdered,
+  Repeat2,
+  TriangleAlert,
+} from "lucide-react";
 import { parseCode } from "../../core/code";
 import { clampIndex } from "../../core/trace";
 import type { Frame } from "../../core/types";
@@ -170,16 +176,56 @@ export const queue: ReadyTopic = {
   ],
   theory: [
     {
-      title: "先进先出",
-      body: "队列在队尾入队、在队头出队，先进入的元素先离开。判空条件是 front 越过 rear。",
+      title: "核心思路",
+      icon: BookOpen,
+      body: "队列像排队买票：新来的人排到队尾，队头的人先办理、先离开。最早进入的元素最先离开，所以称为「先进先出」（FIFO，First In First Out）。",
+      items: [
+        "入队（enqueue）只在队尾添加元素，出队（dequeue）只移除队头元素，取队头（peek）只读取、不移除。",
+        "队列不允许从中间随意插入或删除；操作位置固定，因此不需要像顺序表那样让整段元素搬家。",
+        "本页用定长数组和两个下标 front、rear 表示队列，画布中的元素顺序就是它们入队的先后顺序。",
+      ],
     },
     {
-      title: "front 与 rear",
-      body: "front 记录队头所在槽位，rear 记录队尾（新元素写入的位置）。出队只把 front 后移一格，其余元素原地不动，所以出队也是 O(1)。",
+      title: "看懂 front 与 rear",
+      icon: ListOrdered,
+      body: "本页约定 front 指向当前队头元素，rear 指向当前队尾元素，而不是下一个待写位置。按这个约定，空队列满足 front > rear。",
+      items: [
+        "入队：先检查 rear + 1 是否越界，再把新元素写入 rear + 1 对应的槽位，最后让 rear 加 1。",
+        "出队：先检查队列是否为空，读取 front 指向的元素，再让 front 加 1；其余元素保持不动。",
+        "取队头只读取 data[front]。本页还有「初始 front」控件，用来让队列从数组中间的槽位开始，观察左侧空槽的影响。",
+      ],
+    },
+    {
+      title: "复杂度",
+      icon: Gauge,
+      body: "front 和 rear 直接给出操作位置，每次只读取一个元素或移动一个下标，与队列中有多少元素无关。",
+      rows: [
+        { label: "入队 enqueue", value: "O(1)" },
+        { label: "出队 dequeue", value: "O(1)" },
+        { label: "取队头 peek", value: "O(1)" },
+        { label: "判空或判满", value: "O(1)" },
+        { label: "单次操作所需额外空间", value: "O(1)" },
+      ],
+    },
+    {
+      title: "易错点",
+      icon: TriangleAlert,
+      body: "front、rear 的具体含义必须在整个程序中保持一致。本页的 rear 是队尾下标，因此判空与判满都围绕这个约定书写。",
+      items: [
+        "判空看 front > rear，不是 front === rear；只有一个元素时 front 与 rear 恰好相等。",
+        "本页判满看 rear + 1 >= 容量。若把 rear 改成指向下一个空槽，判空、判满和更新顺序都要随之调整。",
+        "取队头不等于出队：peek 后 front 和 rear 不变，dequeue 后 front 必须向后移动。",
+        "出队只是让 front 越过旧元素，不一定要把旧槽位清零；旧数值即使还在数组中，也已经不属于队列。",
+      ],
     },
     {
       title: "假溢出与循环队列",
-      body: "front 左侧的槽位出队后就再也用不上了，rear 一撞到末端，即使前面空着也入不了队，这叫假溢出。把「初始 front」调大、元素填到队尾，就能复现这一幕；把 front 和 rear 改成对容量取模的循环队列即可复用空槽。",
+      icon: Repeat2,
+      body: "普通顺序队列的 front 和 rear 只向后走。出队会留下左侧空槽，但 rear 到达数组末端后仍无法入队，这种「前面有空位却装不下」的现象叫假溢出。",
+      items: [
+        "把「初始 front」调大，再让元素一直填到数组末端，就能在本页复现假溢出；若所有槽位都有有效元素，则是真正队满。",
+        "循环队列把数组首尾相接，用取模让 front、rear 从末端回到 0，从而复用空槽。本页代码演示普通顺序队列，循环队列只在这里介绍。",
+      ],
     },
   ],
   trace: ({ values, operation, value, index }) =>
