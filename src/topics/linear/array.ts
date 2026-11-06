@@ -1,4 +1,10 @@
-import { Boxes } from "lucide-react";
+import {
+  BookOpen,
+  Boxes,
+  Gauge,
+  ListOrdered,
+  TriangleAlert,
+} from "lucide-react";
 import { parseCode } from "../../core/code";
 import type { Frame } from "../../core/types";
 import type { ReadyTopic } from "../types";
@@ -146,16 +152,47 @@ export const array: ReadyTopic = {
   ],
   theory: [
     {
-      title: "顺序存储",
-      body: "元素在内存中连续存放，逻辑相邻即物理相邻。容量固定，长度可变：容量决定槽位数量，长度记录已用槽位。",
+      title: "核心思路",
+      icon: BookOpen,
+      body: "把顺序表想成一排连续编号的储物格：第 0 格、第 1 格……依次排好。元素在内存中也连续存放，所以知道首地址和下标，就能直接算出目标元素的位置，不必从前往后逐个寻找。",
+      items: [
+        "下标（index）表示元素的位置，本页从 0 开始；长度（length）表示已经装了多少个元素。",
+        "容量（capacity）表示一共有多少个槽位。本页固定为 8，长度可以小于容量，但不能超过容量。",
+        "查询只需按地址直接读取；插入和删除为了保持元素连续、顺序不变，可能需要移动其他元素。",
+      ],
     },
     {
-      title: "随机访问",
-      body: "第 i 个元素的地址 = 首地址 + i × 元素大小，与 i 无关，所以按索引读写是 O(1)，不需要遍历。",
+      title: "跟着动画做一次",
+      icon: ListOrdered,
+      body: "以在下标 i 插入 x 为例：先确认表未满且 0 ≤ i ≤ length，再从最后一个元素开始，把下标 i 到 length - 1 的元素依次右移一格，最后把 x 写入下标 i，并将 length 加 1。",
+      items: [
+        "插入必须从后往前移动。若先移动下标 i，它的值会覆盖下一格，后续元素就可能被错误复制。",
+        "删除下标 i 时则相反：从下标 i + 1 开始依次左移，覆盖被删元素，再将 length 减 1。",
+        "表尾插入不需要让位，表尾删除也不需要补齐空位，因此这两种情况不必移动元素。",
+      ],
     },
     {
-      title: "插入与删除",
-      body: "在索引 i 插入需要把索引 i 及其后的元素整体右移一格；删除则整体左移一格。移动次数为 O(n)，表尾增删是 O(1)。",
+      title: "复杂度",
+      icon: Gauge,
+      body: "下标访问快，中间增删慢，原因正是「直接定位」与「保持连续」这两个特点。下面的 n 是当前元素个数。",
+      rows: [
+        { label: "按下标查询或修改", value: "O(1)" },
+        { label: "表尾插入或删除", value: "O(1)" },
+        { label: "一般位置插入或删除", value: "O(n)" },
+        { label: "按值查找（未排序）", value: "O(n)" },
+        { label: "操作所需额外空间", value: "O(1)" },
+      ],
+    },
+    {
+      title: "易错点",
+      icon: TriangleAlert,
+      body: "顺序表最容易混淆的是下标与长度、插入与删除的移动方向。",
+      items: [
+        "合法查询下标是 0 到 length - 1；合法插入位置还包括 length，因为新元素可以追加到表尾。",
+        "length 是元素个数，不是最后一个元素的下标；最后一个元素的下标是 length - 1。",
+        "插入前必须检查表满，删除或查询前必须检查下标有效；否则可能越界写入或读取不存在的元素。",
+        "本页使用定长数组，不会自动扩容。真实工程中的动态数组扩容是另一种机制，不要与本页模型混为一谈。",
+      ],
     },
   ],
   trace: ({ values, operation, index, value }) =>

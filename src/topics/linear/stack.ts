@@ -1,4 +1,10 @@
-import { Layers } from "lucide-react";
+import {
+  BookOpen,
+  Gauge,
+  Layers,
+  ListOrdered,
+  TriangleAlert,
+} from "lucide-react";
 import { parseCode } from "../../core/code";
 import type { Frame } from "../../core/types";
 import type { ReadyTopic } from "../types";
@@ -149,16 +155,47 @@ export const stack: ReadyTopic = {
   ],
   theory: [
     {
-      title: "后进先出",
-      body: "栈只允许在栈顶插入和删除，最先压入的元素最后才被弹出。栈底固定不动，插入删除都发生在同一端。",
+      title: "核心思路",
+      icon: BookOpen,
+      body: "栈像一叠盘子：新盘子只能放在最上面，取盘子也只能从最上面拿。最后放入的元素最先离开，所以称为「后进先出」（LIFO，Last In First Out）。",
+      items: [
+        "固定不动的一端叫栈底，允许操作的一端叫栈顶。入栈（push）是在栈顶加入元素，出栈（pop）是移除栈顶元素。",
+        "取栈顶（peek）只读取、不移除，因此操作前后栈的内容和 top 都不变。",
+        "栈不能从中间随意插入或删除；正是这个限制，让每次操作都只需关注一个位置。",
+      ],
     },
     {
-      title: "栈顶指针",
-      body: "用 top 记录栈顶下标，空栈时 top = -1。入栈是 top 加一后写入，出栈是先读 top 再把它减一。",
+      title: "看懂 top 的变化",
+      icon: ListOrdered,
+      body: "本页用数组保存栈，并用 top 记录栈顶元素的下标。空栈时 top = -1；有一个元素时 top = 0，之后每入栈一个元素，top 就增加 1。",
+      items: [
+        "入栈：先判断栈是否已满，再执行 top = top + 1，最后把新值写入 data[top]。",
+        "出栈：先判断栈是否为空，读取 data[top]，再执行 top = top - 1。旧槽位里的数值不再属于当前栈。",
+        "取栈顶：只读取 data[top]，不修改 top。画布上 top 徽标跟随移动，对应的就是这些变化。",
+      ],
     },
     {
-      title: "复杂度与溢出",
-      body: "入栈、出栈、取栈顶都是 O(1)，额外空间 O(1)。定长顺序栈满后再入栈会溢出，空栈出栈会下溢，两者都要在代码里判断。",
+      title: "复杂度",
+      icon: Gauge,
+      body: "所有操作都发生在 top 指向的位置，不需要遍历，也不需要移动栈底或其他元素。",
+      rows: [
+        { label: "入栈 push", value: "O(1)" },
+        { label: "出栈 pop", value: "O(1)" },
+        { label: "取栈顶 peek", value: "O(1)" },
+        { label: "判空或判满", value: "O(1)" },
+        { label: "单次操作所需额外空间", value: "O(1)" },
+      ],
+    },
+    {
+      title: "易错点",
+      icon: TriangleAlert,
+      body: "top 是下标，不是元素个数；操作时还要分清「先动 top」还是「先读写数据」。",
+      items: [
+        "入栈若先写 data[top]，会覆盖原栈顶，所以应先让 top 加 1，再写入新元素。",
+        "出栈若先让 top 减 1，再读 data[top]，读到的就是下一个元素，所以应先读取，再移动 top。",
+        "空栈出栈会下溢，栈满入栈会溢出。本页容量为 6，两种情况都会给出提示帧，而不是继续执行非法操作。",
+        "出栈后旧数值可能还留在数组里，但 top 以下的位置才是有效栈内容；不要把残留数值当成仍在栈中。",
+      ],
     },
   ],
   trace: ({ values, operation, value }) =>
