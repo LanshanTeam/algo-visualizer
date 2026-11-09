@@ -1,3 +1,4 @@
+import { Activity } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -24,8 +25,13 @@ export function TopicSidebar({
 
   return (
     <Sidebar aria-label="专题导航">
-      <SidebarHeader className="p-4 font-semibold">
-        数据结构与算法
+      <SidebarHeader>
+        <div className="flex items-center gap-2.5">
+          <div className="app-brand-mark" aria-hidden="true"><Activity /></div>
+          <div className="flex flex-col">
+            <span className="text-[0.95rem] font-semibold leading-tight tracking-tight">数据结构与算法</span>
+          </div>
+        </div>
       </SidebarHeader>
       <SidebarContent>
         {TOPIC_GROUPS_VIEW.map((group) => (

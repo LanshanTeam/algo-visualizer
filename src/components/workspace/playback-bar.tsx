@@ -24,14 +24,14 @@ export function PlaybackBar({
     trace;
 
   return (
-    <div className="shrink-0 space-y-3 border-t px-6 pb-6 pt-4">
+    <div className="playback-shell space-y-3">
       <p
-        className="min-h-6 text-sm leading-relaxed max-sm:min-h-10"
+        className="narration max-sm:min-h-10"
         aria-live="polite"
       >
         {narration}
       </p>
-      <div className="flex items-center gap-4">
+      <div className="playback-progress">
         <Slider
           aria-label="演示进度"
           min={0}
@@ -39,13 +39,13 @@ export function PlaybackBar({
           value={[step]}
           onValueChange={([next]) => seek(next)}
         />
-        <span className="shrink-0 font-mono text-xs text-muted-foreground">
+        <span className="playback-step font-mono text-xs text-muted-foreground">
           {step + 1} / {total}
         </span>
       </div>
       <div
         data-playback-controls
-        className="flex flex-nowrap items-center justify-center gap-1.5 sm:gap-2"
+        className="playback-controls"
       >
         <IconButton
           className="h-8 w-8 shrink-0 sm:h-9 sm:w-9"

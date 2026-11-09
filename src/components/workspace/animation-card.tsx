@@ -31,9 +31,9 @@ const COLUMNS: Record<number, string> = {
   3: "grid-cols-3",
 };
 const legendTone: Record<LegendEntry["tone"], string> = {
-  active: "border-blue-300 bg-blue-50 text-blue-700",
-  pivot: "border-amber-300 bg-amber-50 text-amber-700",
-  settled: "border-green-300 bg-green-50 text-green-700",
+  active: "legend-active",
+  pivot: "legend-pivot",
+  settled: "legend-settled",
   idle: "",
 };
 
@@ -127,7 +127,8 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
       aria-labelledby="animation-title"
     >
       <CardHeader>
-        <CardTitle>
+        <CardTitle className="flex items-center gap-3">
+          <span className="section-eyebrow" aria-hidden="true" />
           <h2 id="animation-title">动画</h2>
         </CardTitle>
       </CardHeader>

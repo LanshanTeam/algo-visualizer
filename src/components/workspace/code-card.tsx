@@ -29,7 +29,8 @@ export function CodeCard({
         代码与原理
       </h2>
       <Tabs defaultValue="code" className="flex flex-col xl:min-h-0 xl:flex-1">
-        <CardHeader>
+        <CardHeader className="gap-3">
+          <span className="section-eyebrow" aria-hidden="true" />
           <TabsList
             aria-label="切换代码与原理"
             className={cn(
@@ -81,24 +82,20 @@ export function CodeCard({
                 className="flex flex-col xl:min-h-0 xl:flex-1"
               >
                 <ScrollArea
-                  className="h-[440px] xl:min-h-0 xl:flex-1"
+                  className="code-scroll h-[440px] xl:min-h-0 xl:flex-1"
                   role="region"
                   aria-label={`${lang} 代码`}
                   tabIndex={0}
                 >
-                  <pre className="w-max min-w-full py-4 font-mono text-xs leading-7">
+                  <pre className="code-pre font-mono text-xs leading-7">
                     {code.map((line, i) => (
                       <div
                         key={i}
-                        className={cn(
-                          "flex border-l-2 border-transparent pr-4",
-                          line.anchor === frame.anchor &&
-                            "border-primary bg-accent text-accent-foreground",
-                        )}
+                        data-active={line.anchor === frame.anchor ? "true" : undefined}
+                        className="code-line"
                       >
                         <span
-                          aria-hidden="true"
-                          className="w-10 shrink-0 select-none pr-4 text-right text-muted-foreground"
+                          className="code-line-number"
                         >
                           {i + 1}
                         </span>

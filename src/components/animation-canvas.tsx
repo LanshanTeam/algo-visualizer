@@ -19,6 +19,7 @@ import {
   SceneUnionCell,
   SceneUnionRowLabel,
 } from "./canvas-primitives";
+import { ink } from "./canvas-primitives";
 import { useAnimationClock } from "./workspace/use-animation-clock";
 
 const LABELS: Record<ImplementedSceneKind, string> = {
@@ -115,8 +116,8 @@ export function AnimationCanvas({
           <rect
             {...scene.container}
             rx="10"
-            fill="#f8fafc"
-            stroke="#cbd5e1"
+            fill={ink.surface}
+            stroke={ink.border}
             strokeDasharray="6 4"
           />
         )}
@@ -124,8 +125,8 @@ export function AnimationCanvas({
           <rect
             {...scene.range}
             rx="10"
-            fill="#f8fafc"
-            stroke="#e2e8f0"
+            fill={ink.surface}
+            stroke={ink.border}
             strokeDasharray="4 4"
           />
         )}
@@ -134,8 +135,8 @@ export function AnimationCanvas({
             key={index}
             {...slot}
             rx={scene.vertical ? "6" : "8"}
-            fill="#f8fafc"
-            stroke="#e2e8f0"
+            fill={ink.surface}
+            stroke={ink.border}
             strokeDasharray="3 3"
           />
         ))}
@@ -147,7 +148,7 @@ export function AnimationCanvas({
             <text x={scene.auxiliary.labelX} y={scene.auxiliary.labelY} fontSize="12" className="fill-muted-foreground">{scene.auxiliary.label}</text>
             {scene.auxiliary.slots.map((slot, index) => (
               <g key={index}>
-                <rect data-auxiliary-slot={index} {...slot} rx="8" fill="#f8fafc" stroke="#e2e8f0" strokeDasharray="3 3" />
+                <rect data-auxiliary-slot={index} {...slot} rx="8" fill={ink.surface} stroke={ink.border} strokeDasharray="3 3" />
                 <text x={slot.x + slot.width / 2} y={slot.y + slot.height + 16} textAnchor="middle" fontSize="12" className="fill-muted-foreground font-mono">{index}</text>
               </g>
             ))}

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Braces } from "lucide-react";
 import { Badge } from "./components/ui/badge";
 import { Separator } from "./components/ui/separator";
 import {
@@ -33,15 +34,20 @@ export default function App() {
     <SidebarProvider>
       <TopicSidebar topic={topicId} onNavigate={navigate} />
       <SidebarInset className="min-w-0 xl:h-dvh">
-        <header className="flex h-16 shrink-0 items-center gap-3 border-b px-4 md:px-6">
+        <header className="app-header">
           <SidebarTrigger aria-label="切换导航" />
-          <Separator orientation="vertical" className="h-4" />
-          <h1 className="text-lg font-semibold">{topic.title}</h1>
+          <Separator orientation="vertical" className="h-5 opacity-60" />
+          <div className="app-brand-mark" aria-hidden="true">
+            <Braces />
+          </div>
+          <h1>{topic.title}</h1>
           {topic.status === "planned" && (
             <Badge variant="secondary">建设中</Badge>
           )}
+          <div className="app-header-spacer" />
+          <div className="app-brand-mark" aria-hidden="true" style={{ width: 26, height: 26, opacity: 0.55 }}><Braces /></div>
         </header>
-        <div className="mx-auto w-full max-w-[1600px] p-4 md:p-6 xl:min-h-0 xl:flex-1">
+        <div className="app-content xl:min-h-0 xl:flex-1">
           {topic.status === "ready" ? (
             <TopicWorkspace key={topic.id} topic={topic} />
           ) : (
