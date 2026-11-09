@@ -1,23 +1,25 @@
 import { useCallback, useEffect, useState } from "react";
-import { Badge } from "./components/ui/badge";
-import { Separator } from "./components/ui/separator";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "./components/ui/sidebar";
+import { Braces, Layers, Menu, PanelsTopLeft, Sparkles } from "lucide-react";
 import { PlannedTopicPage } from "./components/planned-topic";
 import { TopicSidebar } from "./components/topic-sidebar";
 import { TopicWorkspace } from "./components/topic-workspace";
-import { DEFAULT_TOPIC_ID, TOPICS } from "./topics/registry";
+import { DEFAULT_TOPIC_ID, TOPICS, TOPIC_GROUPS_VIEW } from "./topics/registry";
 
 function readTopic(): string {
   const id = location.hash.replace(/^#\/?/, "");
   return TOPICS[id] ? id : DEFAULT_TOPIC_ID;
 }
 
+const GROUP_ICON: Record<string, typeof Layers> = {
+  linear: Layers,
+  "tree-hash": Sparkles,
+  graph: PanelsTopLeft,
+  "sorting-searching": Braces,
+};
+
 export default function App() {
   const [topicId, setTopicId] = useState(readTopic);
+  const [navOpen, setNavOpen] = useState(false);
   useEffect(() => {
     const change = () => setTopicId(readTopic());
     addEventListener("hashchange", change);
@@ -25,32 +27,48 @@ export default function App() {
   }, []);
   const navigate = useCallback((next: string) => {
     setTopicId(next);
+    setNavOpen(false);
     if (location.hash !== `#/${next}`) location.hash = `/${next}`;
   }, []);
   const topic = TOPICS[topicId];
+  const group = TOPIC_GROUPS_VIEW.find((entry) => entry.id === topic.group);
+  const GroupIcon = GROUP_ICON[topic.group] ?? Layers;
 
   return (
-    <SidebarProvider>
-      <TopicSidebar topic={topicId} onNavigate={navigate} />
-      <SidebarInset className="min-w-0 xl:h-dvh">
-        <header className="flex h-16 shrink-0 items-center gap-3 border-b px-4 md:px-6">
-          <SidebarTrigger aria-label="切换导航" />
-          <Separator orientation="vertical" className="h-4" />
-          <h1 className="text-lg font-semibold">{topic.title}</h1>
-          {topic.status === "planned" && (
-            <Badge variant="secondary">建设中</Badge>
-          )}
+    <div className="app">
+      <TopicSidebar topic={topicId} onNavigate={navigate} open={navOpen} onClose={() => setNavOpen(false)} />
+      <div className="app-main">
+        <header className="topbar">
+          <button
+            type="button"
+            className="menu-toggle"
+            aria-label="切换导航"
+            aria-expanded={navOpen}
+            onClick={() => setNavOpen((value) => !value)}
+          >
+            <Menu />
+          </button>
+          <span className="topbar-sep" aria-hidden="true" />
+          <h1 className="topbar-title">{topic.title}</h1>
+          {topic.status === "planned" && <span className="topbar-tag">建设中</span>}
+          <div className="topbar-right">
+            <span className="topbar-crumb">
+              {group?.label}
+              <GroupIcon className="pill-icon" aria-hidden="true" />
+            </span>
+            <span className="topbar-crumb"><span className="pill">算法可视化</span></span>
+          </div>
         </header>
-        <div className="mx-auto w-full max-w-[1600px] p-4 md:p-6 xl:min-h-0 xl:flex-1">
-          {topic.status === "ready" ? (
-            <TopicWorkspace key={topic.id} topic={topic} />
-          ) : (
-            <div className="flex flex-col gap-6 xl:h-full xl:flex-row">
+        <div className="content">
+          <div className="content-inner">
+            {topic.status === "ready" ? (
+              <TopicWorkspace key={topic.id} topic={topic} />
+            ) : (
               <PlannedTopicPage topic={topic} />
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </SidebarInset>
-    </SidebarProvider>
+      </div>
+    </div>
   );
 }

@@ -1,21 +1,12 @@
 import { useMemo } from "react";
 import type { ReactNode } from "react";
-import { Shuffle } from "lucide-react";
-import { randomValues } from "../../core/random";
-import { Alert, AlertDescription } from "../ui/alert";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import { Separator } from "../ui/separator";
+  Activity,
+  ChevronDown,
+  Shuffle,
+  TriangleAlert,
+} from "lucide-react";
+import { randomValues } from "../../core/random";
 import { AnimationCanvas } from "../animation-canvas";
 import { hashChainCapacityOf } from "../hash-layout";
 import { treeDepthOf } from "../tree-layout";
@@ -26,23 +17,24 @@ import type { TopicTrace } from "./use-topic-trace";
 import type { LegendEntry, ReadyTopic } from "../../topics/types";
 
 const COLUMNS: Record<number, string> = {
-  1: "grid-cols-1",
-  2: "grid-cols-2",
-  3: "grid-cols-3",
+  1: "cols-1",
+  2: "cols-2",
+  3: "cols-3",
+  4: "cols-4",
 };
 const legendTone: Record<LegendEntry["tone"], string> = {
-  active: "border-blue-300 bg-blue-50 text-blue-700",
-  pivot: "border-amber-300 bg-amber-50 text-amber-700",
-  settled: "border-green-300 bg-green-50 text-green-700",
-  idle: "",
+  active: "active",
+  pivot: "pivot",
+  settled: "settled",
+  idle: "idle",
 };
 
 function ArrayStage({ array, children }: { array: boolean; children: ReactNode }) {
   // Only array scenes opt into the centered composition.
   if (!array) return <>{children}</>;
   return (
-    <div data-array-stage className="flex min-h-[300px] min-w-0 flex-1 items-center justify-center py-3">
-      <div data-array-composition className="flex w-full min-w-0 flex-col items-center gap-2">
+    <div data-array-stage className="stage flex-1 items-center justify-center">
+      <div data-array-composition className="stage-stack gap-2">
         {children}
       </div>
     </div>
@@ -59,10 +51,11 @@ function ValueInput({
   onChange: (value: number) => void;
 }) {
   return (
-    <div className="space-y-2">
-      <Label htmlFor="node-value">{label}</Label>
-      <Input
+    <div className="field">
+      <label className="field-label" htmlFor="node-value">{label}</label>
+      <input
         id="node-value"
+        className="input"
         type="number"
         min={-999}
         max={999}
@@ -75,7 +68,6 @@ function ValueInput({
 
 export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: TopicTrace }) {
   const controls = topic.controls;
-  const linked = topic.scene === "linked-list";
   const array = topic.scene === "array";
   const graph = topic.scene === "graph";
   const {
@@ -122,84 +114,78 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
   );
 
   return (
-    <Card
-      className="flex min-w-0 flex-col xl:min-h-0 xl:flex-1"
-      aria-labelledby="animation-title"
-    >
-      <CardHeader>
-        <CardTitle>
+    <section className="panel" aria-labelledby="animation-title">
+      <header className="panel-head">
+        <span className="head-icon"><Activity /></span>
+        <div>
+          <div className="eyebrow">VISUALIZATION</div>
           <h2 id="animation-title">动画</h2>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className={array ? "flex min-h-0 flex-1 flex-col gap-3 xl:overflow-y-auto" : "space-y-3 xl:min-h-0 xl:flex-1 xl:overflow-y-auto"}>
+        </div>
+      </header>
+      <div className="panel-body">
         <div data-array-controls={array || undefined} className={array ? "grid grid-cols-[minmax(0,1fr)_6rem] gap-3" : undefined}>
-        <div className="min-w-0 space-y-2">
-          <Label htmlFor="values">{controls.dataLabel}</Label>
-          <div className="flex gap-2">
-            <Input
-              id="values"
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") apply();
-              }}
-            />
-            <Button variant="outline" onClick={apply}>
-              应用
-            </Button>
-            {controls.randomizable !== false && (
-            <IconButton
-              label="随机数据"
-              onClick={() => {
-                // 队列的初始 front 本身占槽位，生成时要一起让出来。
-                const next = randomValues(
-                  controls,
-                  controls.index?.occupiesSlots ? index : 0,
-                );
-                if (load(next)) setInput(next.join(", "));
-              }}
-            >
-              <Shuffle />
-            </IconButton>
-            )}
-          </div>
-        </div>
-        </div>
-        {fieldCount > 0 && (
-          <div className={`grid gap-3 ${COLUMNS[fieldCount]}`}>
-            {controls.operations && (
-              <div className="space-y-2">
-                <Label htmlFor="operation">操作</Label>
-                <Select
-                  value={operation}
-                  onValueChange={(selected) => {
-                    if (load(values, selected)) setOperation(selected);
+          <div className="field">
+            <label className="field-label" htmlFor="values">{controls.dataLabel}</label>
+            <div className="data-row">
+              <input
+                id="values"
+                className="input"
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") apply();
+                }}
+              />
+              <button type="button" className="btn" onClick={apply}>应用</button>
+              {controls.randomizable !== false && (
+                <IconButton
+                  label="随机数据"
+                  onClick={() => {
+                    // 队列的初始 front 本身占槽位，生成时要一起让出来。
+                    const next = randomValues(
+                      controls,
+                      controls.index?.occupiesSlots ? index : 0,
+                    );
+                    if (load(next)) setInput(next.join(", "));
                   }}
                 >
-                  <SelectTrigger id="operation">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
+                  <Shuffle />
+                </IconButton>
+              )}
+            </div>
+          </div>
+        </div>
+        {fieldCount > 0 && (
+          <div className={`field-grid ${COLUMNS[fieldCount] ?? "cols-1"}`}>
+            {controls.operations && (
+              <div className="field">
+                <label className="field-label" htmlFor="operation">操作</label>
+                <span className="select">
+                  <select
+                    id="operation"
+                    value={operation}
+                    onChange={(event) => {
+                      const selected = event.target.value;
+                      if (load(values, selected)) setOperation(selected);
+                    }}
+                  >
                     {controls.operations.map((entry) => (
-                      <SelectItem key={entry.id} value={entry.id}>
-                        {entry.label}
-                      </SelectItem>
+                      <option key={entry.id} value={entry.id}>{entry.label}</option>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </select>
+                  <ChevronDown className="chev" aria-hidden="true" />
+                </span>
               </div>
             )}
             {controls.index && (
-              <div className="space-y-2">
-                <Label htmlFor="index">{controls.index.label}</Label>
-                <Input
+              <div className="field">
+                <label className="field-label" htmlFor="index">{controls.index.label}</label>
+                <input
                   id="index"
+                  className="input"
                   type="number"
                   min={0}
-                  max={controls.index.max({
-                    length: values.length,
-                    operation,
-                  })}
+                  max={controls.index.max({ length: values.length, operation })}
                   value={index}
                   onChange={(event) => {
                     const next = Number(event.target.value);
@@ -220,10 +206,11 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
               />
             )}
             {showValue2 && controls.value2 && (
-              <div className="space-y-2">
-                <Label htmlFor="node-value-b">{controls.value2.label}</Label>
-                <Input
+              <div className="field">
+                <label className="field-label" htmlFor="node-value-b">{controls.value2.label}</label>
+                <input
                   id="node-value-b"
+                  className="input"
                   type="number"
                   min={-999}
                   max={999}
@@ -239,11 +226,12 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
           </div>
         )}
         {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+          <div className="alert" role="alert">
+            <TriangleAlert aria-hidden="true" />
+            <span>{error}</span>
+          </div>
         )}
-        <Separator className="-mx-6 w-auto" />
+        <div data-orientation="horizontal" className="divider" role="none" />
         <ArrayStage array={array}>
           {graph ? (
             <GraphAnimationCanvas
@@ -268,41 +256,38 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
             />
           )}
           {topic.legend && (
-            <div className="flex flex-wrap justify-center gap-2" aria-label="图例">
+            <div className="legend" aria-label="图例">
               {topic.legend.map((entry) => (
-                <Badge
-                  key={entry.label}
-                  variant="outline"
-                  className={legendTone[entry.tone] || undefined}
-                >
+                <span key={entry.label} className={`chip ${legendTone[entry.tone]}`}>
+                  <span className="swatch" style={{ background: entry.tone === "active" ? "var(--tone-active)" : entry.tone === "pivot" ? "var(--tone-pivot)" : entry.tone === "settled" ? "var(--tone-settled)" : "var(--tone-idle)" }} />
                   {entry.label}
-                </Badge>
+                </span>
               ))}
             </div>
           )}
           {frame.stack.length > 0 && (
-            <div className={array ? "flex flex-wrap items-center justify-center gap-2 text-xs" : "flex flex-wrap items-center gap-2 text-xs"}>
-              <span className="text-muted-foreground">调用栈</span>
+            <div className="meta-row">
+              <span className="lbl">调用栈</span>
               {frame.stack.map((entry, i) => (
-                <Badge variant="secondary" className="font-mono" key={i}>
-                  {entry}
-                </Badge>
+                <span className="chip mono secondary" key={i}>{entry}</span>
               ))}
             </div>
           )}
           {!graph && frame.queue && frame.queue.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2 text-xs" aria-label="队列">
-              <span className="text-muted-foreground">队列</span>
-              {frame.queue.map((entry, index) => <Badge variant="secondary" className="font-mono" key={index}>{entry}</Badge>)}
+            <div className="meta-row" aria-label="队列">
+              <span className="lbl">队列</span>
+              {frame.queue.map((entry, index) => (
+                <span className="chip mono secondary" key={index}>{entry}</span>
+              ))}
             </div>
           )}
         </ArrayStage>
-      </CardContent>
+      </div>
       <PlaybackBar
         trace={trace}
         narration={frame.narration}
         total={frames.length}
       />
-    </Card>
+    </section>
   );
 }

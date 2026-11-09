@@ -10,7 +10,7 @@ import type { ReadyTopic } from "../topics/types";
 export function TopicWorkspace({ topic }: { topic: ReadyTopic }) {
   const trace = useTopicTrace(topic);
   return (
-    <div className="flex flex-col gap-6 xl:h-full xl:flex-row">
+    <div className="workspace">
       <AnimationCard topic={topic} trace={trace} />
       <CodeCard topic={topic} trace={trace} />
     </div>
