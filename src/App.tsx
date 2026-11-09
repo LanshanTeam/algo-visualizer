@@ -33,10 +33,10 @@ export default function App() {
     <SidebarProvider>
       <TopicSidebar topic={topicId} onNavigate={navigate} />
       <SidebarInset className="min-w-0 xl:h-dvh">
-        <header className="flex h-16 shrink-0 items-center gap-3 border-b px-4 md:px-6">
+        <header className="av-header flex h-16 shrink-0 items-center gap-3 border-b px-4 md:px-6">
           <SidebarTrigger aria-label="切换导航" />
           <Separator orientation="vertical" className="h-4" />
-          <h1 className="text-lg font-semibold">{topic.title}</h1>
+          <h1 className="av-title text-lg font-semibold">{topic.title}</h1>
           {topic.status === "planned" && (
             <Badge variant="secondary">建设中</Badge>
           )}

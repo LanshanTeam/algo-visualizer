@@ -93,7 +93,7 @@ export function CodeCard({
                         className={cn(
                           "flex border-l-2 border-transparent pr-4",
                           line.anchor === frame.anchor &&
-                            "border-primary bg-accent text-accent-foreground",
+                            "av-code-active",
                         )}
                       >
                         <span
