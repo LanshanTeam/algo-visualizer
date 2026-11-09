@@ -1,15 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { Badge } from "./components/ui/badge";
-import { Separator } from "./components/ui/separator";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "./components/ui/sidebar";
+import { Menu } from "lucide-react";
 import { PlannedTopicPage } from "./components/planned-topic";
-import { TopicSidebar } from "./components/topic-sidebar";
+import { TopicSidebar, topicOrdinal } from "./components/topic-sidebar";
 import { TopicWorkspace } from "./components/topic-workspace";
-import { DEFAULT_TOPIC_ID, TOPICS } from "./topics/registry";
+import { DEFAULT_TOPIC_ID, TOPICS, TOPIC_GROUPS_VIEW } from "./topics/registry";
 
 function readTopic(): string {
   const id = location.hash.replace(/^#\/?/, "");
@@ -18,39 +12,85 @@ function readTopic(): string {
 
 export default function App() {
   const [topicId, setTopicId] = useState(readTopic);
+  const [navOpen, setNavOpen] = useState(false);
+
   useEffect(() => {
     const change = () => setTopicId(readTopic());
     addEventListener("hashchange", change);
     return () => removeEventListener("hashchange", change);
   }, []);
+
+  useEffect(() => {
+    if (!navOpen) return;
+    const close = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setNavOpen(false);
+    };
+    addEventListener("keydown", close);
+    return () => removeEventListener("keydown", close);
+  }, [navOpen]);
+
   const navigate = useCallback((next: string) => {
     setTopicId(next);
     if (location.hash !== `#/${next}`) location.hash = `/${next}`;
   }, []);
   const topic = TOPICS[topicId];
+  const group = TOPIC_GROUPS_VIEW.find((entry) =>
+    entry.items.some((item) => item.id === topic.id),
+  );
+  const ordinal = topicOrdinal(topic.id);
 
   return (
-    <SidebarProvider>
-      <TopicSidebar topic={topicId} onNavigate={navigate} />
-      <SidebarInset className="min-w-0 xl:h-dvh">
-        <header className="flex h-16 shrink-0 items-center gap-3 border-b px-4 md:px-6">
-          <SidebarTrigger aria-label="切换导航" />
-          <Separator orientation="vertical" className="h-4" />
-          <h1 className="text-lg font-semibold">{topic.title}</h1>
-          {topic.status === "planned" && (
-            <Badge variant="secondary">建设中</Badge>
-          )}
-        </header>
-        <div className="mx-auto w-full max-w-[1600px] p-4 md:p-6 xl:min-h-0 xl:flex-1">
-          {topic.status === "ready" ? (
-            <TopicWorkspace key={topic.id} topic={topic} />
-          ) : (
-            <div className="flex flex-col gap-6 xl:h-full xl:flex-row">
-              <PlannedTopicPage topic={topic} />
+    <div className="app-shell">
+      <TopicSidebar
+        topic={topicId}
+        onNavigate={navigate}
+        open={navOpen}
+        onClose={() => setNavOpen(false)}
+      />
+      <div className="app-main">
+        <header className="topbar">
+          <button
+            type="button"
+            className="menu-button"
+            aria-label="切换导航"
+            aria-expanded={navOpen}
+            onClick={() => setNavOpen((value) => !value)}
+          >
+            <Menu size={18} />
+          </button>
+          <span className="topbar-rule" aria-hidden="true" />
+          <div className="topic-heading">
+            <div className="eyebrow">
+              <span>{group?.label}</span>
+              <span className="slash" aria-hidden="true">
+                /
+              </span>
+              <span className="ordinal">{ordinal}</span>
             </div>
-          )}
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+            <h1 className="topic-title">
+              {topic.title}
+              {topic.status === "planned" && (
+                <span className="status-badge">建设中</span>
+              )}
+            </h1>
+          </div>
+          <div className="topbar-end" aria-hidden="true">
+            <div className="topic-stamp">{ordinal}</div>
+          </div>
+        </header>
+
+        <main className="workspace">
+          <div className="workspace-inner">
+            {topic.status === "ready" ? (
+              <TopicWorkspace key={topic.id} topic={topic} />
+            ) : (
+              <div className="planned-wrap">
+                <PlannedTopicPage topic={topic} />
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
+    </div>
   );
 }
