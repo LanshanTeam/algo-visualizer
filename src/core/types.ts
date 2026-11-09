@@ -44,6 +44,8 @@ export type FrameLink = [from: number, to: number, side?: FrameLinkSide];
 export interface Frame {
   /** 全体主元素的唯一身份集合；未提供 arraySlots 时也表示主数组顺序。 */
   items: Item[];
+  /** 本帧实际参与大小比较的两个主元素身份；缺省表示没有比较。 */
+  comparison?: readonly [number, number];
   /** 主数组的真实槽位；null 是空洞，不复制或交换暂存元素。 */
   arraySlots?: (Item | null)[];
   /** 插入排序从主数组取出的暂存元素。 */

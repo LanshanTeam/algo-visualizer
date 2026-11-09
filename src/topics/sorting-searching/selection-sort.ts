@@ -9,7 +9,7 @@ export function selectionSortTrace(values: number[]): Frame[] {
   const frames: Frame[] = [];
   const settled: number[] = [];
   function emit(anchor: string, narration: string, pointers: Record<string, number> = {}, active: number[] = [], variables: Frame["variables"] = {}) {
-    frames.push({ items: items.map((item) => ({ ...item })), active, settled: [...settled], pointers: anchor === "start" && items.length ? { low: 0, high: items.length - 1 } : pointers, range: anchor === "start" ? { low: 0, high: items.length - 1 } : undefined, anchor, narration, variables, stack: [] });
+    frames.push({ comparison: anchor === "compare" ? [items[active[0]].id, items[active[1]].id] : undefined, items: items.map((item) => ({ ...item })), active, settled: [...settled], pointers: anchor === "start" && items.length ? { low: 0, high: items.length - 1 } : pointers, range: anchor === "start" ? { low: 0, high: items.length - 1 } : undefined, anchor, narration, variables, stack: [] });
   }
   emit("start", "每轮扫描未排序区间，选出最小值放到区间首位。");
   for (let i = 0; i < items.length - 1; i++) {

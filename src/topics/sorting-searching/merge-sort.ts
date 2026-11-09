@@ -73,6 +73,8 @@ export function mergeSortTrace(values: number[]): Frame[] {
       items: items.map(item => ({ ...item })),
       auxiliary: { label: "辅助数组", slots: auxiliary.map(item => item ? { ...item } : null) },
       range: low !== undefined && high !== undefined ? { low, high } : undefined,
+      comparison: anchor === "compare" && pointers.i !== undefined && pointers.j !== undefined
+        ? [items[pointers.i].id, items[pointers.j].id] : undefined,
       anchor, narration, pointers, active: anchor === "start" ? [] : Object.values(pointers),
       settled: anchor === "done" ? items.map((_, index) => index) : [],
       variables, stack: [...stack],

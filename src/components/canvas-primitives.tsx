@@ -22,6 +22,7 @@ export function SceneNode({
   node,
   linked,
   circular = false,
+  crowned = false,
   progress,
   times,
 }: ClockProps & {
@@ -29,6 +30,7 @@ export function SceneNode({
   linked: boolean;
   /** 树节点为圆形，用等宽高矩形加圆角实现。 */
   circular?: boolean;
+  crowned?: boolean;
 }) {
   const present = useIsPresent();
   const x = useTransform(progress, (p) =>
@@ -49,6 +51,13 @@ export function SceneNode({
       exit={{ opacity: 0, scale: 0.85 }}
       transition={{ duration: 0.15 }}
     >
+      {crowned && (
+        <g data-comparison-crown={node.id} transform={`translate(${node.width / 2 - 9} -14)`} role="img" aria-label="当前比较中较大的数">
+          <title>当前比较中较大的数</title>
+          <path d="M 1 3 L 5 6 L 9 1 L 13 6 L 17 3 L 15 11 H 3 Z" fill="#fbbf24" stroke="#b45309" strokeWidth="1.2" strokeLinejoin="round" />
+          <path d="M 3 13 H 15" stroke="#b45309" strokeWidth="1.2" strokeLinecap="round" />
+        </g>
+      )}
       <motion.rect
         initial={false}
         width={node.width}

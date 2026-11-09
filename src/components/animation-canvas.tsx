@@ -1,4 +1,5 @@
 import { useId, useMemo } from "react";
+import { largerComparedId } from "./comparison";
 import {
   AnimatePresence,
 } from "motion/react";
@@ -56,6 +57,7 @@ export function AnimationCanvas({
 }) {
   const linked = kind === "linked-list";
   const array = kind === "array";
+  const crownedId = array ? largerComparedId(frame) : undefined;
   const arrowId = useId().replace(/:/g, "");
   const scene = useMemo(
     () =>
@@ -199,6 +201,7 @@ export function AnimationCanvas({
             <SceneNode
               key={node.id}
               node={node}
+              crowned={node.id === crownedId}
               linked={kind === "linked-list"}
               circular={
                 kind === "tree" ||

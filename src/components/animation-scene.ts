@@ -301,7 +301,7 @@ export function createAnimationScene({
     vertical,
     nodes,
     auxiliary,
-    heldLabel: !linked && frame.held ? { x: 28, y: 10, text: "暂存 key" } : undefined,
+    heldLabel: !linked && frame.held ? { x: 92, y: 46, text: "暂存 key" } : undefined,
     pointers,
     badges: [],
     indices,
