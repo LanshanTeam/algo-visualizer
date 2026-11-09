@@ -9,10 +9,10 @@ import { connectionPathAt, sampleTrack } from "./scene-geometry";
 import type { AnimationScene, SceneLink } from "./animation-scene";
 
 export const palette = {
-  active: { stroke: "#2563eb", fill: "#eff6ff" },
-  pivot: { stroke: "#d97706", fill: "#fffbeb" },
-  settled: { stroke: "#15803d", fill: "#f0fdf4" },
-  idle: { stroke: "#cbd5e1", fill: "#fff" },
+  active: { stroke: "#60a5fa", fill: "#12233d" },
+  pivot: { stroke: "#fbbf24", fill: "#2b2313" },
+  settled: { stroke: "#4ade80", fill: "#12281c" },
+  idle: { stroke: "#3b4d66", fill: "#111b29" },
 };
 export type ClockProps = { progress: MotionValue<number>; times: number[] };
 const nodeRadius = 8;
@@ -63,16 +63,16 @@ export function SceneNode({
       />
       {linked && (
         <>
-          <line x1="54" y1="0" x2="54" y2={node.height} stroke="#cbd5e1" />
+          <line x1="54" y1="0" x2="54" y2={node.height} stroke="#3b4d66" />
           <line
             x1="67"
             y1={node.height / 2}
             x2={node.width}
             y2={node.height / 2}
-            stroke="#94a3b8"
+            stroke="#5b6f8a"
             strokeWidth="1.5"
           />
-          <circle cx="67" cy={node.height / 2} r="3.5" fill="#94a3b8" />
+          <circle cx="67" cy={node.height / 2} r="3.5" fill="#5b6f8a" />
         </>
       )}
       <text
@@ -80,7 +80,7 @@ export function SceneNode({
         x={node.valueX}
         y={node.valueY}
         textAnchor="middle"
-        fill="#1e293b"
+        fill="#e2eaf6"
         fontFamily="monospace"
         fontSize={node.fontSize}
       >
@@ -98,7 +98,7 @@ export function AuxiliaryNode({ node, progress, times }: ClockProps & {
   return (
     <motion.g data-auxiliary-node-id={node.id} transform={`translate(${node.x} ${node.y})`} style={{ opacity }}>
       <rect width={node.width} height={node.height} rx={nodeRadius} fill={palette.active.fill} stroke={palette.active.stroke} />
-      <text x={node.width / 2} y="34" textAnchor="middle" fontFamily="monospace" fontSize={nodeFontSize(node.value)} fill="#1e293b">{node.value}</text>
+      <text x={node.width / 2} y="34" textAnchor="middle" fontFamily="monospace" fontSize={nodeFontSize(node.value)} fill="#e2eaf6">{node.value}</text>
     </motion.g>
   );
 }
@@ -125,7 +125,7 @@ export function SceneEdge({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15 }}
       fill="none"
-      stroke={link.highlighted ? palette.active.stroke : "#94a3b8"}
+      stroke={link.highlighted ? palette.active.stroke : "#5b6f8a"}
       strokeWidth="2"
       markerEnd={link.arrow ? `url(#${arrowId})` : undefined}
     />
@@ -144,7 +144,7 @@ export function SceneTail({
     <motion.g style={{ x, y }}>
       <path
         d="M 0 0 H 30"
-        stroke="#94a3b8"
+        stroke="#5b6f8a"
         strokeWidth="1.5"
         markerEnd={`url(#${arrowId})`}
       />
@@ -285,7 +285,7 @@ export function SceneBucket({
         x={bucket.x + bucket.width / 2}
         y={bucket.y + bucket.height / 2 + 4}
         textAnchor="middle"
-        fill={bucket.active ? palette.pivot.stroke : "#64748b"}
+        fill={bucket.active ? palette.pivot.stroke : "#8b9cb4"}
         fontFamily="monospace"
         fontSize="11"
       >
@@ -297,7 +297,7 @@ export function SceneBucket({
           y1={bucket.y + bucket.height / 2}
           x2={x2}
           y2={y2}
-          stroke={bucket.active ? palette.pivot.stroke : "#94a3b8"}
+          stroke={bucket.active ? palette.pivot.stroke : "#5b6f8a"}
           strokeWidth="1.5"
           markerEnd={`url(#${arrowId})`}
         />
@@ -343,7 +343,7 @@ export function SceneHeapCell({
         x={cell.x + cell.width / 2}
         y={cell.y + cell.height / 2 + fontSize * 0.35}
         textAnchor="middle"
-        fill="#1e293b"
+        fill="#e2eaf6"
         fontFamily="monospace"
         fontSize={fontSize}
       >
@@ -396,7 +396,7 @@ export function SceneUnionCell({
         x={column.x + column.width / 2}
         y={column.parentY + column.parentHeight / 2 + 3.5}
         textAnchor="middle"
-        fill="#1e293b"
+        fill="#e2eaf6"
         fontFamily="monospace"
         fontSize={parentFontSize}
       >
@@ -420,7 +420,7 @@ export function SceneUnionCell({
         x={column.x + column.width / 2}
         y={column.rankY + column.rankHeight / 2 + 3}
         textAnchor="middle"
-        fill="#1e293b"
+        fill="#e2eaf6"
         fontFamily="monospace"
         fontSize="8"
       >
@@ -464,14 +464,14 @@ export function SceneFormula({
         width={formula.width}
         height={formula.height}
         rx={6}
-        fill={formula.active ? palette.pivot.fill : "#f8fafc"}
-        stroke={formula.active ? palette.pivot.stroke : "#cbd5e1"}
+        fill={formula.active ? palette.pivot.fill : "#101a28"}
+        stroke={formula.active ? palette.pivot.stroke : "#3b4d66"}
         strokeWidth={formula.active ? 1.5 : 1}
       />
       <text
         x={formula.x + 10}
         y={formula.y + formula.height / 2 + 4}
-        fill={formula.active ? palette.pivot.stroke : "#475569"}
+        fill={formula.active ? palette.pivot.stroke : "#c6d4e6"}
         fontFamily="monospace"
         fontSize="11"
       >
