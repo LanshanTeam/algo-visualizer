@@ -15,6 +15,7 @@ import {
   SceneFormula,
   SceneHeapCell,
   SceneNode,
+  SceneComparisonCrown,
   ScenePointer,
   SceneTail,
   SceneUnionCell,
@@ -71,6 +72,7 @@ export function AnimationCanvas({
       }),
     [frame, previous, kind, capacity, treeDepth, hashChainCapacity],
   );
+  const crownedNode = scene.nodes.find(node => node.id === crownedId);
   const progress = useAnimationClock({
     frame,
     previous,
@@ -201,7 +203,6 @@ export function AnimationCanvas({
             <SceneNode
               key={node.id}
               node={node}
-              crowned={node.id === crownedId}
               linked={kind === "linked-list"}
               circular={
                 kind === "tree" ||
@@ -281,6 +282,9 @@ export function AnimationCanvas({
           >
             {scene.empty.text}
           </text>
+        )}
+        {crownedNode && (
+          <SceneComparisonCrown node={crownedNode} progress={progress} times={scene.times} />
         )}
       </svg>
       <ScrollBar orientation="horizontal" />

@@ -2,6 +2,9 @@ import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { largerComparedId } from "./comparison";
 import { AnimationCanvas } from "./animation-canvas";
+import { SceneComparisonCrown } from "./canvas-primitives";
+import { createAnimationScene } from "./animation-scene";
+import { motionValue } from "motion/react";
 import { bubbleSortTrace } from "../topics/sorting-searching/bubble-sort";
 import { selectionSortTrace } from "../topics/sorting-searching/selection-sort";
 import { insertionSortTrace } from "../topics/sorting-searching/insertion-sort";
@@ -29,6 +32,24 @@ describe("sorting comparison crowns", () => {
       }
     });
   }
+  it("paints crowns after all cards and annotations", () => {
+    const frame = insertionSortTrace([38, 16]).find(f => f.anchor === "compare")!;
+    const html = renderToStaticMarkup(<AnimationCanvas frame={frame} kind="array" capacity={2} duration={0} />);
+    expect(html.indexOf("data-comparison-crown")).toBeGreaterThan(html.lastIndexOf("data-node-id"));
+    expect(html).toMatch(/data-comparison-crown[\s\S]*?<\/g><\/svg>/);
+  });
+  it("keeps the crown within the canvas on an upper exchange track", () => {
+    const frames = bubbleSortTrace([8, 3]);
+    const frame = frames.find(f => f.anchor === "compare")!;
+    const previous = frames.find(f => f.anchor === "swap")!;
+    const scene = createAnimationScene({ frame, previous, kind: "array", capacity: 2 });
+    const node = scene.nodes.find(n => n.id === largerComparedId(frame))!;
+    // The returning larger item travels on the lower lane; explicitly test
+    // the same crown primitive on the existing upper-lane geometry as well.
+    const upper = { ...node, y: [72, 8, 8, 72] };
+    const html = renderToStaticMarkup(<svg><SceneComparisonCrown node={upper} times={scene.times} progress={motionValue(0.5)} /></svg>);
+    expect(html).toContain("translateY(2px)");
+  });
   it("includes the held key and pivot when they are larger", () => {
     const held = insertionSortTrace([1, 9]).find(f => f.anchor === "compare")!;
     expect(largerComparedId(held)).toBe(held.held!.id);
