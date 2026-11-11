@@ -1,21 +1,7 @@
 import { useMemo } from "react";
 import type { ReactNode } from "react";
-import { Shuffle } from "lucide-react";
+import { ChevronDown, Shuffle } from "lucide-react";
 import { randomValues } from "../../core/random";
-import { Alert, AlertDescription } from "../ui/alert";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import { Separator } from "../ui/separator";
 import { AnimationCanvas } from "../animation-canvas";
 import { hashChainCapacityOf } from "../hash-layout";
 import { treeDepthOf } from "../tree-layout";
@@ -25,27 +11,47 @@ import { PlaybackBar } from "./playback-bar";
 import type { TopicTrace } from "./use-topic-trace";
 import type { LegendEntry, ReadyTopic } from "../../topics/types";
 
-const COLUMNS: Record<number, string> = {
-  1: "grid-cols-1",
-  2: "grid-cols-2",
-  3: "grid-cols-3",
-};
 const legendTone: Record<LegendEntry["tone"], string> = {
-  active: "border-blue-300 bg-blue-50 text-blue-700",
-  pivot: "border-amber-300 bg-amber-50 text-amber-700",
-  settled: "border-green-300 bg-green-50 text-green-700",
-  idle: "",
+  active: "tone-active",
+  pivot: "tone-pivot",
+  settled: "tone-settled",
+  idle: "tone-idle",
 };
 
-function ArrayStage({ array, children }: { array: boolean; children: ReactNode }) {
-  // Only array scenes opt into the centered composition.
-  if (!array) return <>{children}</>;
+function ArrayStage({
+  array,
+  children,
+}: {
+  array: boolean;
+  children: ReactNode;
+}) {
+  if (!array) return <div className="stage">{children}</div>;
   return (
-    <div data-array-stage className="flex min-h-[300px] min-w-0 flex-1 items-center justify-center py-3">
-      <div data-array-composition className="flex w-full min-w-0 flex-col items-center gap-2">
+    <div
+      data-array-stage
+      className="stage flex min-h-[300px] min-w-0 flex-1 flex-col items-center justify-center py-3"
+    >
+      <div
+        data-array-composition
+        className="flex w-full min-w-0 flex-col items-center gap-2"
+      >
         {children}
       </div>
     </div>
+  );
+}
+
+function FieldLabel({
+  htmlFor,
+  children,
+}: {
+  htmlFor?: string;
+  children: ReactNode;
+}) {
+  return (
+    <label className="control-label" htmlFor={htmlFor}>
+      {children}
+    </label>
   );
 }
 
@@ -59,10 +65,11 @@ function ValueInput({
   onChange: (value: number) => void;
 }) {
   return (
-    <div className="space-y-2">
-      <Label htmlFor="node-value">{label}</Label>
-      <Input
+    <div className="control-field">
+      <FieldLabel htmlFor="node-value">{label}</FieldLabel>
+      <input
         id="node-value"
+        className="field"
         type="number"
         min={-999}
         max={999}
@@ -73,9 +80,14 @@ function ValueInput({
   );
 }
 
-export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: TopicTrace }) {
+export function AnimationCard({
+  topic,
+  trace,
+}: {
+  topic: ReadyTopic;
+  trace: TopicTrace;
+}) {
   const controls = topic.controls;
-  const linked = topic.scene === "linked-list";
   const array = topic.scene === "array";
   const graph = topic.scene === "graph";
   const {
@@ -122,187 +134,220 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
   );
 
   return (
-    <Card
-      className="flex min-w-0 flex-col xl:min-h-0 xl:flex-1"
+    <section
+      className="panel animation-panel"
       aria-labelledby="animation-title"
     >
-      <CardHeader>
-        <CardTitle>
-          <h2 id="animation-title">动画</h2>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className={array ? "flex min-h-0 flex-1 flex-col gap-3 xl:overflow-y-auto" : "space-y-3 xl:min-h-0 xl:flex-1 xl:overflow-y-auto"}>
-        <div data-array-controls={array || undefined} className={array ? "grid grid-cols-[minmax(0,1fr)_6rem] gap-3" : undefined}>
-        <div className="min-w-0 space-y-2">
-          <Label htmlFor="values">{controls.dataLabel}</Label>
-          <div className="flex gap-2">
-            <Input
-              id="values"
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") apply();
-              }}
-            />
-            <Button variant="outline" onClick={apply}>
-              应用
-            </Button>
-            {controls.randomizable !== false && (
-            <IconButton
-              label="随机数据"
-              onClick={() => {
-                // 队列的初始 front 本身占槽位，生成时要一起让出来。
-                const next = randomValues(
-                  controls,
-                  controls.index?.occupiesSlots ? index : 0,
-                );
-                if (load(next)) setInput(next.join(", "));
-              }}
-            >
-              <Shuffle />
-            </IconButton>
-            )}
-          </div>
-        </div>
-        </div>
-        {fieldCount > 0 && (
-          <div className={`grid gap-3 ${COLUMNS[fieldCount]}`}>
-            {controls.operations && (
-              <div className="space-y-2">
-                <Label htmlFor="operation">操作</Label>
-                <Select
-                  value={operation}
-                  onValueChange={(selected) => {
-                    if (load(values, selected)) setOperation(selected);
-                  }}
-                >
-                  <SelectTrigger id="operation">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {controls.operations.map((entry) => (
-                      <SelectItem key={entry.id} value={entry.id}>
-                        {entry.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            {controls.index && (
-              <div className="space-y-2">
-                <Label htmlFor="index">{controls.index.label}</Label>
-                <Input
-                  id="index"
-                  type="number"
-                  min={0}
-                  max={controls.index.max({
-                    length: values.length,
-                    operation,
-                  })}
-                  value={index}
-                  onChange={(event) => {
-                    const next = Number(event.target.value);
-                    setIndex(next);
-                    load(values, operation, next);
+      <div className="panel-head">
+        <span className="section-num" aria-hidden="true">
+          01
+        </span>
+        <h2 id="animation-title" className="panel-title">
+          动画
+        </h2>
+        <span className="panel-head-rule" aria-hidden="true" />
+      </div>
+
+      <div className="animation-body">
+        <div className="controls">
+          <div
+            data-array-controls={array || undefined}
+            className={
+              array
+                ? "controls-top grid grid-cols-[minmax(0,1fr)_6rem] gap-3"
+                : "controls-top"
+            }
+          >
+            <div className="control-field">
+              <FieldLabel htmlFor="values">{controls.dataLabel}</FieldLabel>
+              <div className="data-row">
+                <input
+                  id="values"
+                  className="field"
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") apply();
                   }}
                 />
+                <button type="button" className="btn btn-primary" onClick={apply}>
+                  应用
+                </button>
+                {controls.randomizable !== false && (
+                  <IconButton
+                    label="随机数据"
+                    className="btn-outline"
+                    onClick={() => {
+                      const next = randomValues(
+                        controls,
+                        controls.index?.occupiesSlots ? index : 0,
+                      );
+                      if (load(next)) setInput(next.join(", "));
+                    }}
+                  >
+                    <Shuffle size={15} />
+                  </IconButton>
+                )}
               </div>
-            )}
-            {showValue && controls.value && (
-              <ValueInput
-                label={controls.value.label}
-                value={value}
-                onChange={(next) => {
-                  setValue(next);
-                  load(values, operation, index, next);
-                }}
+            </div>
+          </div>
+
+          {fieldCount > 0 && (
+            <div className="control-grid">
+              {controls.operations && (
+                <div className="control-field">
+                  <FieldLabel htmlFor="operation">操作</FieldLabel>
+                  <div className="select-shell">
+                    <select
+                      id="operation"
+                      className="select-field"
+                      value={operation}
+                      onChange={(event) => {
+                        const selected = event.target.value;
+                        if (load(values, selected)) setOperation(selected);
+                      }}
+                    >
+                      {controls.operations.map((entry) => (
+                        <option key={entry.id} value={entry.id}>
+                          {entry.label}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown
+                      className="select-chevron"
+                      aria-hidden="true"
+                    />
+                  </div>
+                </div>
+              )}
+              {controls.index && (
+                <div className="control-field">
+                  <FieldLabel htmlFor="index">{controls.index.label}</FieldLabel>
+                  <input
+                    id="index"
+                    className="field"
+                    type="number"
+                    min={0}
+                    max={controls.index.max({
+                      length: values.length,
+                      operation,
+                    })}
+                    value={index}
+                    onChange={(event) => {
+                      const next = Number(event.target.value);
+                      setIndex(next);
+                      load(values, operation, next);
+                    }}
+                  />
+                </div>
+              )}
+              {showValue && controls.value && (
+                <ValueInput
+                  label={controls.value.label}
+                  value={value}
+                  onChange={(next) => {
+                    setValue(next);
+                    load(values, operation, index, next);
+                  }}
+                />
+              )}
+              {showValue2 && controls.value2 && (
+                <div className="control-field">
+                  <FieldLabel htmlFor="node-value-b">
+                    {controls.value2.label}
+                  </FieldLabel>
+                  <input
+                    id="node-value-b"
+                    className="field"
+                    type="number"
+                    min={-999}
+                    max={999}
+                    value={value2}
+                    onChange={(event) => {
+                      const next = Number(event.target.value);
+                      setValue2(next);
+                      load(values, operation, index, value, next);
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {error && (
+            <div className="form-error" role="alert">
+              {error}
+            </div>
+          )}
+        </div>
+
+        <div data-orientation="horizontal" role="separator" className="rule" />
+
+        <div className="stage-shell">
+          <ArrayStage array={array}>
+            {graph ? (
+              <GraphAnimationCanvas
+                frame={frame}
+                previous={previousStep === null ? undefined : frames[previousStep]}
+                duration={1 / speed}
+                paused={!playing && stepMode === "automatic"}
+                onAnimatingChange={setAnimating}
+              />
+            ) : (
+              <AnimationCanvas
+                key={traceVersion}
+                frame={frame}
+                previous={previousStep === null ? undefined : frames[previousStep]}
+                kind={topic.scene}
+                treeDepth={treeDepth}
+                hashChainCapacity={hashChainCapacity}
+                capacity={capacity}
+                duration={1 / speed}
+                paused={!playing && stepMode === "automatic"}
+                onAnimatingChange={setAnimating}
               />
             )}
-            {showValue2 && controls.value2 && (
-              <div className="space-y-2">
-                <Label htmlFor="node-value-b">{controls.value2.label}</Label>
-                <Input
-                  id="node-value-b"
-                  type="number"
-                  min={-999}
-                  max={999}
-                  value={value2}
-                  onChange={(event) => {
-                    const next = Number(event.target.value);
-                    setValue2(next);
-                    load(values, operation, index, value, next);
-                  }}
-                />
+            {topic.legend && (
+              <div className="legend" aria-label="图例">
+                {topic.legend.map((entry) => (
+                  <span
+                    key={entry.label}
+                    className={`legend-badge ${legendTone[entry.tone]}`}
+                  >
+                    {entry.label}
+                  </span>
+                ))}
               </div>
             )}
-          </div>
-        )}
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-        <Separator className="-mx-6 w-auto" />
-        <ArrayStage array={array}>
-          {graph ? (
-            <GraphAnimationCanvas
-              frame={frame}
-              previous={previousStep === null ? undefined : frames[previousStep]}
-              duration={1 / speed}
-              paused={!playing && stepMode === "automatic"}
-              onAnimatingChange={setAnimating}
-            />
-          ) : (
-            <AnimationCanvas
-              key={traceVersion}
-              frame={frame}
-              previous={previousStep === null ? undefined : frames[previousStep]}
-              kind={topic.scene}
-              treeDepth={treeDepth}
-              hashChainCapacity={hashChainCapacity}
-              capacity={capacity}
-              duration={1 / speed}
-              paused={!playing && stepMode === "automatic"}
-              onAnimatingChange={setAnimating}
-            />
-          )}
-          {topic.legend && (
-            <div className="flex flex-wrap justify-center gap-2" aria-label="图例">
-              {topic.legend.map((entry) => (
-                <Badge
-                  key={entry.label}
-                  variant="outline"
-                  className={legendTone[entry.tone] || undefined}
-                >
-                  {entry.label}
-                </Badge>
-              ))}
-            </div>
-          )}
-          {frame.stack.length > 0 && (
-            <div className={array ? "flex flex-wrap items-center justify-center gap-2 text-xs" : "flex flex-wrap items-center gap-2 text-xs"}>
-              <span className="text-muted-foreground">调用栈</span>
-              {frame.stack.map((entry, i) => (
-                <Badge variant="secondary" className="font-mono" key={i}>
-                  {entry}
-                </Badge>
-              ))}
-            </div>
-          )}
-          {!graph && frame.queue && frame.queue.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2 text-xs" aria-label="队列">
-              <span className="text-muted-foreground">队列</span>
-              {frame.queue.map((entry, index) => <Badge variant="secondary" className="font-mono" key={index}>{entry}</Badge>)}
-            </div>
-          )}
-        </ArrayStage>
-      </CardContent>
+            {frame.stack.length > 0 && (
+              <div className="meta-row">
+                <span className="text-muted-foreground">调用栈</span>
+                {frame.stack.map((entry, i) => (
+                  <span className="chip" key={i}>
+                    {entry}
+                  </span>
+                ))}
+              </div>
+            )}
+            {!graph && frame.queue && frame.queue.length > 0 && (
+              <div className="meta-row" aria-label="队列">
+                <span className="text-muted-foreground">队列</span>
+                {frame.queue.map((entry, index) => (
+                  <span className="chip" key={index}>
+                    {entry}
+                  </span>
+                ))}
+              </div>
+            )}
+          </ArrayStage>
+        </div>
+      </div>
+
       <PlaybackBar
         trace={trace}
         narration={frame.narration}
         total={frames.length}
       />
-    </Card>
+    </section>
   );
 }

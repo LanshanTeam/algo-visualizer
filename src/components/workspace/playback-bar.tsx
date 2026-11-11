@@ -1,13 +1,5 @@
+import type { CSSProperties } from "react";
 import { ArrowLeft, ArrowRight, Pause, Play, RotateCcw } from "lucide-react";
-import { Button } from "../ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import { Slider } from "../ui/slider";
 import { IconButton } from "./icon-button";
 import type { TopicTrace } from "./use-topic-trace";
 
@@ -22,84 +14,69 @@ export function PlaybackBar({
 }) {
   const { step, playing, animating, speed, setSpeed, seek, togglePlayback } =
     trace;
+  const progress = total <= 1 ? 0 : (step / (total - 1)) * 100;
 
   return (
-    <div className="shrink-0 space-y-3 border-t px-6 pb-6 pt-4">
-      <p
-        className="min-h-6 text-sm leading-relaxed max-sm:min-h-10"
-        aria-live="polite"
-      >
+    <div className="playback">
+      <p className="narration" aria-live="polite">
         {narration}
       </p>
-      <div className="flex items-center gap-4">
-        <Slider
+      <div className="progress-row">
+        <input
+          className="range"
+          type="range"
           aria-label="演示进度"
           min={0}
           max={total - 1}
-          value={[step]}
-          onValueChange={([next]) => seek(next)}
+          value={step}
+          onChange={(event) => seek(Number(event.target.value))}
+          style={{ "--progress": `${progress}%` } as CSSProperties}
         />
-        <span className="shrink-0 font-mono text-xs text-muted-foreground">
+        <output>
           {step + 1} / {total}
-        </span>
+        </output>
       </div>
-      <div
-        data-playback-controls
-        className="flex flex-nowrap items-center justify-center gap-1.5 sm:gap-2"
-      >
-        <IconButton
-          className="h-8 w-8 shrink-0 sm:h-9 sm:w-9"
-          label="重新开始"
-          onClick={() => seek(0)}
-        >
-          <RotateCcw />
+      <div data-playback-controls className="transport">
+        <IconButton label="重新开始" onClick={() => seek(0)}>
+          <RotateCcw size={15} />
         </IconButton>
         <IconButton
           label="上一步"
-          className="h-8 w-8 shrink-0 sm:h-9 sm:w-9"
-          variant="outline"
+          className="btn-outline"
           disabled={step === 0 || animating}
           onClick={() => seek(step - 1)}
         >
-          <ArrowLeft />
+          <ArrowLeft size={15} />
         </IconButton>
-        <Button
-          className="h-8 w-8 shrink-0 px-0 sm:h-9 sm:w-auto sm:px-4"
+        <button
+          type="button"
+          className="play-button"
           aria-label={playing ? "暂停" : "播放"}
           onClick={togglePlayback}
         >
-          {playing ? <Pause /> : <Play />}
-          <span className="hidden sm:inline">
-            {playing ? "暂停" : "播放"}
-          </span>
-        </Button>
+          {playing ? <Pause size={15} /> : <Play size={15} />}
+          <span>{playing ? "暂停" : "播放"}</span>
+        </button>
         <IconButton
           label="下一步"
-          className="h-8 w-8 shrink-0 sm:h-9 sm:w-9"
-          variant="outline"
+          className="btn-outline"
           disabled={step === total - 1 || animating}
           onClick={() => seek(step + 1)}
         >
-          <ArrowRight />
+          <ArrowRight size={15} />
         </IconButton>
-        <Select
+        <select
+          className="speed"
           value={String(speed)}
-          onValueChange={(next) => setSpeed(Number(next))}
+          aria-label="播放速度"
+          onChange={(event) => setSpeed(Number(event.target.value))}
         >
-          <SelectTrigger
-            className="h-8 w-[68px] shrink-0 px-2 text-xs sm:h-9 sm:w-20 sm:px-3 sm:text-sm"
-            aria-label="播放速度"
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {[0.5, 1, 1.5, 2, 4].map((n) => (
-              <SelectItem key={n} value={String(n)}>
-                {n}×
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          {[0.5, 1, 1.5, 2, 4].map((n) => (
+            <option key={n} value={String(n)}>
+              {n}×
+            </option>
+          ))}
+        </select>
       </div>
     </div>
   );

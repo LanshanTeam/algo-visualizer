@@ -1,20 +1,22 @@
 import type { ComponentProps } from "react";
-import { Button } from "../ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { cn } from "../../lib/utils";
 
+/** 带可见 tooltip 的可访问图标按钮；不依赖组件库。 */
 export function IconButton({
   label,
   children,
+  className,
   ...props
-}: ComponentProps<typeof Button> & { label: string }) {
+}: ComponentProps<"button"> & { label: string }) {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label={label} {...props}>
-          {children}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
-    </Tooltip>
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      className={cn("btn btn-icon", className)}
+      {...props}
+    >
+      {children}
+    </button>
   );
 }
