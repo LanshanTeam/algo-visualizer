@@ -3,13 +3,14 @@ import { sortingSearchingTopics } from "../topics/sorting-searching";
 import { createAnimationScene } from "./animation-scene";
 
 describe("sorting/searching first-frame boundaries", () => {
-  it("keeps every main slot at the original quick-sort baseline, including every insertion/merge frame", () => {
+  it("为暂存 key 预留空间，并在专题内保持所有帧的主数组基线一致", () => {
     for (const topic of sortingSearchingTopics) {
       if (topic.status !== "ready") continue;
       const frames = topic.trace({ values: [1, 3, 5], value: 3, index: 0, operation: "" });
       for (const frame of frames) {
         const scene = createAnimationScene({ frame, kind: "array", capacity: 3 });
-        expect(scene.slots.map(slot => slot.y)).toEqual([72, 72, 72]);
+        const baseline = topic.id === "insertion-sort" ? 88 : 72;
+        expect(scene.slots.map(slot => slot.y)).toEqual([baseline, baseline, baseline]);
         if (scene.auxiliary) expect(scene.auxiliary.slots[0].y).toBeGreaterThan(72 + 52 + 46);
       }
     }

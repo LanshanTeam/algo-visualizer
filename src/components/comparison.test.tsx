@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { largerComparedId } from "./comparison";
 import { AnimationCanvas } from "./animation-canvas";
 import { SceneComparisonCrown } from "./canvas-primitives";
-import { createAnimationScene } from "./animation-scene";
+import { createAnimationScene, sampleTrack } from "./animation-scene";
 import { motionValue } from "motion/react";
 import { bubbleSortTrace } from "../topics/sorting-searching/bubble-sort";
 import { selectionSortTrace } from "../topics/sorting-searching/selection-sort";
@@ -37,6 +37,33 @@ describe("sorting comparison crowns", () => {
     const html = renderToStaticMarkup(<AnimationCanvas frame={frame} kind="array" capacity={2} duration={0} />);
     expect(html.indexOf("data-comparison-crown")).toBeGreaterThan(html.lastIndexOf("data-node-id"));
     expect(html).toMatch(/data-comparison-crown[\s\S]*?<\/g><\/svg>/);
+  });
+  it("插入排序前进和回退时，皇冠不与其他卡片重叠", () => {
+    for (const input of [[9, 1], [1, 9], [9, 7, 5, 3, 1]]) {
+      const frames = insertionSortTrace(input);
+      for (const [index, frame] of frames.entries()) {
+        const crownedId = largerComparedId(frame);
+        if (crownedId === undefined) continue;
+        for (const previous of [undefined, frames[index - 1], frames[index + 1]]) {
+          const scene = createAnimationScene({ frame, previous, kind: "array", capacity: input.length });
+          const owner = scene.nodes.find(node => node.id === crownedId)!;
+          for (let tick = 0; tick <= 100; tick++) {
+            const progress = tick / 100;
+            // 包含皇冠描边，避免只验证 DOM 中存在标记而漏掉视觉重叠。
+            const crownLeft = sampleTrack(owner.x, scene.times, progress) + owner.width / 2 - 9;
+            const crownTop = Math.max(2, sampleTrack(owner.y, scene.times, progress) - 14);
+            for (const other of scene.nodes) {
+              if (other.id === crownedId) continue;
+              const left = sampleTrack(other.x, scene.times, progress);
+              const top = sampleTrack(other.y, scene.times, progress);
+              const overlaps = crownLeft < left + other.width && crownLeft + 18 > left
+                && crownTop < top + other.height && crownTop + 14 > top;
+              expect(overlaps, `${input}: ${frame.anchor} / ${previous?.anchor} at ${progress}`).toBe(false);
+            }
+          }
+        }
+      }
+    }
   });
   it("keeps the crown within the canvas on an upper exchange track", () => {
     const frames = bubbleSortTrace([8, 3]);

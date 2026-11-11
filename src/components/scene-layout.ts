@@ -33,9 +33,13 @@ export function createSceneLayout({
     (frame.arraySlots !== undefined ||
       frame.held !== undefined ||
       frame.auxiliary !== undefined);
-  const baseline = linked ? 84 : 72;
-  // Leave a real gap below the held node without moving the shared main row.
   const heldY = 16;
+  // 暂存行与主数组之间留出皇冠的高度；所有插入排序帧保持同一基线。
+  const baseline = linked
+    ? 84
+    : kind === "array" && frame.arraySlots !== undefined
+      ? heldY + nodeHeight + 20
+      : 72;
   const slots = linked
     ? 0
     : Math.max(1, vertical ? Math.min(capacity, STACK_SLOTS_MAX) : capacity);
