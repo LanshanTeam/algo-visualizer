@@ -1,4 +1,9 @@
-import { GitFork } from "lucide-react";
+import {
+  BookOpen,
+  Gauge,
+  GitFork,
+  TriangleAlert,
+} from "lucide-react";
 import { parseCode } from "../../core/code";
 import type { Frame, FrameLink, TraceInput } from "../../core/types";
 import type { ReadyTopic } from "../types";
@@ -556,20 +561,42 @@ export const unionFind: ReadyTopic = {
   ],
   theory: [
     {
-      title: "父指针表示",
-      body: "每个元素只保存 parent。parent[x] = x 表示 x 是根；沿父指针一直走就能找到集合编号。",
-    },
-    {
-      title: "按秩合并",
-      body: "合并时把较矮的树挂到较高的树下；rank 只在两棵树等高时加一，因此树高不会超过 log n。",
-    },
-    {
-      title: "路径压缩",
-      body: "查找结束后把路径上的节点直接接到根上。之后再查同一路径只需一步。",
+      title: "核心思路",
+      icon: BookOpen,
+      body: "并查集不保存每个集合的完整成员，只给每个元素存一个 parent 指针：parent[x] = x 表示 x 是根，根代表整个集合；否则沿 parent 一路向上就能找到根。find(x) 负责找根，并在返回时把路径上的节点直接挂到根上，这叫路径压缩。union(a, b) 先分别找根：根相同说明已经连通；根不同才按 rank 把较矮的树挂到较高的树下，rank 相同的才让新根加一。",
+      items: [
+        "默认输入建成三个集合后，parent = [0, 0, 0, 2, 4, 4, 6, 6]。查找 3 的路径是 3 → 2 → 0，压缩后 parent[3] 从 2 变成 0。",
+        "合并 3 和 7 时根不同：rank[0] = 2，rank[6] = 1，把根 6 挂到根 0 下。",
+        "两个元素本来同根时不挂接、不改变集合划分，但两次查找仍可能压缩路径。",
+        "找到根之后的挂接只改被挂接的那个根的 parent，不会逐个修改集合里的元素。",
+      ],
     },
     {
       title: "复杂度",
-      body: "两种优化同时使用时，单次操作的均摊复杂度为 O(α(n))，可以近似看作常数；空间为 O(n)。",
+      icon: Gauge,
+      body: "设元素数为 n、树高为 h。find 只沿一条路径向上，长度最多为 h；只按秩合并时 h = O(log n)，再加上路径压缩后单次操作均摊 O(α(n))，实际可以近似看作常数。union 是两次 find 加一次挂接，connected 是两次 find。",
+      rows: [
+        { label: "find（只用父指针）", value: "O(h)，最坏 O(n)" },
+        { label: "find（按秩合并 + 路径压缩）", value: "均摊 O(α(n))" },
+        { label: "union", value: "两次 find + O(1)" },
+        { label: "connected", value: "两次 find" },
+        { label: "创建", value: "O(n log n) 最坏" },
+        { label: "空间", value: "O(n)" },
+      ],
+    },
+    {
+      title: "易错点",
+      icon: TriangleAlert,
+      body: "并查集代码很短，但根、rank 和压缩的细节很容易写错。",
+      items: [
+        "根的条件是 parent[x] == x，不是 parent[x] == 0；根可以不是 0，也可以是任意元素值。",
+        "路径压缩只改路径上的 parent，不改 rank；压缩后 rank 可能大于真实高度，但仍是树高的上界。",
+        "按秩合并的方向不能反：rank 小的根挂到 rank 大的根下；两个 rank 相等时，才让新根的 rank 加一。",
+        "找到根之后，union 只改被挂接的那个根的 parent，不要逐个修改集合里的元素；但查找阶段的路径压缩可能改动其他 parent。",
+        "两个元素已经同根时，union 不挂接、不改变集合划分；两次查找仍可能压缩路径，所以 parent 数组仍会变化。",
+        "find 和 connected 也会执行路径压缩，所以即使没有合并，parent 数组也可能发生变化。",
+        "元素值不要求从 0 开始：内部会先把元素值映射为节点 id，再用 id 访问 parent 和 rank；不要把元素值直接当下标。",
+      ],
     },
   ],
   trace: ({ values, operation, value, value2 }: TraceInput) =>

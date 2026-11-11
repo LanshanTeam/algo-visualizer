@@ -1,4 +1,9 @@
-import { Hash } from "lucide-react";
+import {
+  BookOpen,
+  Gauge,
+  Hash,
+  TriangleAlert,
+} from "lucide-react";
 import { parseCode } from "../../core/code";
 import { HASH_BUCKET_COUNT, hashSlot } from "../../core/hash";
 import type { Frame, FrameLink, TraceInput } from "../../core/types";
@@ -531,16 +536,40 @@ export const hashTable: ReadyTopic = {
   ],
   theory: [
     {
-      title: "除留余数法",
-      body: "h(key) = key mod 7；对负键先加 7 再取模，保证桶号落在 0..6。桶数固定，便于观察冲突分布。",
-    },
-    {
-      title: "链地址法",
-      body: "同一个桶的键按插入顺序挂在一条链上。查找先定位桶，再沿链逐个比较，冲突越多链越长。",
+      title: "核心思路",
+      icon: BookOpen,
+      body: "哈希表用哈希函数把键直接映射到桶，理想情况下一次定位，不需要逐个比较。本演示固定 7 个桶，用除留余数法 h(key) = ((key % 7) + 7) % 7；先加 7 再取模，负键也能落在 0 到 6。不同键落到同一个桶叫冲突，用链地址法把冲突键串成一条链。",
+      items: [
+        "键：要存或要查的数据；桶：数组里的一个位置，本演示有 0 到 6 共 7 个桶。",
+        "同一键每次算出的桶号相同；冲突不会覆盖旧键，链会变长。",
+        "查找沿目标桶的链逐个比较；插入先查重，再把新键挂到链尾；删除要先找到目标并保存前驱。",
+        "负载因子 α = n / 7 越大，平均链越长；本演示固定 7 个桶，不做扩容或再哈希。",
+      ],
     },
     {
       title: "复杂度",
-      body: "设负载因子 α = n / 7，平均查找 O(1 + α)；最坏所有键同桶，退化为 O(n)。空间为键数加 7 个桶。",
+      icon: Gauge,
+      body: "算桶号和取桶头都是 O(1)，真正花时间的是沿链扫描。平均链长为 α = n / 7，所以查找、插入、删除平均 O(1 + α)；所有键冲突到同一个桶时最坏 O(n)。空间为 n 个键节点加 7 个桶头，O(n)。",
+      rows: [
+        { label: "平均查找", value: "O(1 + α)" },
+        { label: "最坏查找", value: "O(n)" },
+        { label: "插入 / 删除（平均）", value: "O(1 + α)" },
+        { label: "插入 / 删除（最坏）", value: "O(n)" },
+        { label: "空间", value: "O(n + 7)" },
+      ],
+    },
+    {
+      title: "易错点",
+      icon: TriangleAlert,
+      body: "哈希表最容易错在取模、链头和删除时的指针改接。",
+      items: [
+        "负数直接取模会得到负桶号；必须先归一化，本演示用 ((key % 7) + 7) % 7。",
+        "输入不允许重复键；对已存在的键执行插入时只提示，不改变结构。",
+        "删除链头时一定要同步修改桶头，否则这个节点仍然能被访问到。",
+        "删除中间节点要保留前驱；只改当前节点的 next 不会把链接回去。",
+        "冲突不会覆盖旧键，链会变长；键越多，平均查找越慢。",
+        "桶数固定为 7 是演示设定；真实哈希表通常会在负载因子过高时扩容。",
+      ],
     },
   ],
   trace: ({ values, operation, value }: TraceInput) =>

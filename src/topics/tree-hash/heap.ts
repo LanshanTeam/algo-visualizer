@@ -1,4 +1,9 @@
-import { Workflow } from "lucide-react";
+import {
+  BookOpen,
+  Gauge,
+  TriangleAlert,
+  Workflow,
+} from "lucide-react";
 import { parseCode } from "../../core/code";
 import type { Frame, FrameLink, TraceInput } from "../../core/types";
 import type { ReadyTopic } from "../types";
@@ -356,16 +361,39 @@ export const heap: ReadyTopic = {
   ],
   theory: [
     {
-      title: "完全二叉树与数组",
-      body: "堆是一棵完全二叉树，按层序紧密地存进数组：下标 i 的父节点是 (i - 1) / 2，左孩子是 2i + 1，右孩子是 2i + 2。树的形状不会出现空洞。",
+      title: "核心思路",
+      icon: BookOpen,
+      body: "小顶堆是一棵完全二叉树：除了最后一层，其他层都排满，最后一层从左到右连续排列；并且每个父节点都不大于它的孩子。因此最小值一定在根，也就是数组下标 0，但堆并不保证整个数组有序。完全二叉树可以按层序直接存进数组：下标 i 的父节点是 (i - 1) / 2 向下取整，左孩子是 2i + 1，右孩子是 2i + 2。",
+      items: [
+        "上浮：插入时把新值放到数组末尾，再沿父节点向上比较、交换。",
+        "下沉：删除堆顶时把末尾元素移到根，再和较小的孩子比较、交换。",
+        "建堆后默认输入 50, 30, 70, 20, 40, 60, 80 的数组是 [20, 30, 60, 50, 40, 70, 80]：50 在下标 3，父节点是下标 1 的 30。",
+        "查看堆顶是 O(1)；插入和删除都只走一条根到叶的路径，是 O(log n)。",
+      ],
     },
     {
-      title: "上浮",
-      body: "插入时先把新值放到数组末尾，再与父节点比较。小顶堆里若新值更小就交换，继续向上，直到到达根或父节点不大于它。",
+      title: "复杂度",
+      icon: Gauge,
+      body: "设堆中有 n 个元素、树高为 h。插入最多上浮 h 层，删除最多下沉 h 层，而 h = O(log n)，所以两者都是 O(log n)。本演示用逐个插入建堆，累计 O(n log n)；自底向上建堆可以做到 O(n)，但当前演示没有使用。",
+      rows: [
+        { label: "查看堆顶", value: "O(1)" },
+        { label: "插入（上浮）", value: "O(log n)" },
+        { label: "删除堆顶（下沉）", value: "O(log n)" },
+        { label: "建堆（逐个插入）", value: "O(n log n)" },
+        { label: "额外空间", value: "O(n)" },
+      ],
     },
     {
-      title: "下沉与复杂度",
-      body: "删除堆顶时把末元素移到根，再与较小的孩子比较并交换，直到叶子或堆序恢复。上浮和下沉都只走一条根到叶的路径，复杂度 O(log n)。",
+      title: "易错点",
+      icon: TriangleAlert,
+      body: "堆的代码不长，但下标和比较对象很容易写错。",
+      items: [
+        "本演示使用 0 基下标；如果按 1 基写，父子公式会变成 i / 2、2i、2i + 1，两套公式不能混用。",
+        "下沉时要和较小的孩子交换。只和左孩子比较，可能漏掉右孩子更小的情况。",
+        "当前节点不大于较小的孩子时就应停止；相等也停止，继续交换没有意义。",
+        "删除堆顶前先处理空堆；只有一个元素时直接删掉，不需要下沉。",
+        "堆只保证根是最小值，数组中其余元素并不按升序排列。",
+      ],
     },
   ],
   trace: ({ values, operation, value }: TraceInput) =>
