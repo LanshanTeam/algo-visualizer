@@ -83,7 +83,7 @@ export function AnimationCanvas({
   });
 
   return (
-    <ScrollArea className={array ? "w-full [&_[data-radix-scroll-area-viewport]>div]:!block" : "w-full"}>
+    <ScrollArea className={array ? "av-stage w-full p-3 [&_[data-radix-scroll-area-viewport]>div]:!block" : "av-stage w-full p-3"}>
       <svg
         data-animation-stage
         viewBox={`0 0 ${scene.width} ${scene.height}`}
@@ -119,8 +119,8 @@ export function AnimationCanvas({
           <rect
             {...scene.container}
             rx="10"
-            fill="#f8fafc"
-            stroke="#cbd5e1"
+            fill="#151d29"
+            stroke="#3a4757"
             strokeDasharray="6 4"
           />
         )}
@@ -128,8 +128,8 @@ export function AnimationCanvas({
           <rect
             {...scene.range}
             rx="10"
-            fill="#f8fafc"
-            stroke="#e2e8f0"
+            fill="#151d29"
+            stroke="#2a3644"
             strokeDasharray="4 4"
           />
         )}
@@ -138,8 +138,8 @@ export function AnimationCanvas({
             key={index}
             {...slot}
             rx={scene.vertical ? "6" : "8"}
-            fill="#f8fafc"
-            stroke="#e2e8f0"
+            fill="#151d29"
+            stroke="#2a3644"
             strokeDasharray="3 3"
           />
         ))}
@@ -151,7 +151,7 @@ export function AnimationCanvas({
             <text x={scene.auxiliary.labelX} y={scene.auxiliary.labelY} fontSize="12" className="fill-muted-foreground">{scene.auxiliary.label}</text>
             {scene.auxiliary.slots.map((slot, index) => (
               <g key={index}>
-                <rect data-auxiliary-slot={index} {...slot} rx="8" fill="#f8fafc" stroke="#e2e8f0" strokeDasharray="3 3" />
+                <rect data-auxiliary-slot={index} {...slot} rx="8" fill="#151d29" stroke="#2a3644" strokeDasharray="3 3" />
                 <text x={slot.x + slot.width / 2} y={slot.y + slot.height + 16} textAnchor="middle" fontSize="12" className="fill-muted-foreground font-mono">{index}</text>
               </g>
             ))}

@@ -2,6 +2,7 @@ import { useId } from "react";
 import { motion, useMotionValue, useReducedMotion, useTransform, type MotionValue } from "motion/react";
 import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 import { palette } from "./canvas-primitives";
+import { cn } from "../lib/utils";
 
 export type GraphTreeTone = "idle" | "active" | "settled" | "pivot" | "muted";
 
@@ -37,11 +38,11 @@ export interface GraphTreeCanvasProps {
 }
 
 const colors: Record<GraphTreeTone, { stroke: string; fill: string; text: string }> = {
-  idle: { ...palette.idle, text: "#1e293b" },
-  active: { ...palette.active, text: "#1e3a8a" },
-  settled: { ...palette.settled, text: "#14532d" },
-  pivot: { ...palette.pivot, text: "#78350f" },
-  muted: { stroke: "#cbd5e1", fill: "#f8fafc", text: "#94a3b8" },
+  idle: { ...palette.idle, text: "#e2e8f0" },
+  active: { ...palette.active, text: "#bae6fd" },
+  settled: { ...palette.settled, text: "#a7f3d0" },
+  pivot: { ...palette.pivot, text: "#fde68a" },
+  muted: { stroke: "#475569", fill: "#1b2330", text: "#64748b" },
 };
 
 function edgePath(
@@ -102,7 +103,7 @@ function GraphTreeNodeView({
       <text y="5" textAnchor="middle" fill={tone.text} fontFamily="monospace" fontSize="16">{node.label}</text>
       {node.detail !== undefined && (
         <g pointerEvents="none">
-          <rect x={-18} y={nodeRadius + 5} width="36" height="17" rx="4" fill="white" opacity="0.92" />
+          <rect x={-18} y={nodeRadius + 5} width="36" height="17" rx="4" fill="#0f1620" opacity="0.92" />
           <text y={nodeRadius + 17} textAnchor="middle" className="fill-muted-foreground font-mono" fontSize="12">{node.detail}</text>
         </g>
       )}
@@ -169,7 +170,7 @@ export function GraphTreeCanvas({
   const markerId = `graph-tree-arrow-${useId().replace(/:/g, "")}`;
 
   return (
-    <ScrollArea className={className ?? "w-full"}>
+    <ScrollArea className={cn("av-stage w-full p-3", className)}>
       <svg
         data-graph-tree-stage
         viewBox={`0 0 ${width} ${height}`}

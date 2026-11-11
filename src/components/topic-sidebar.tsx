@@ -23,21 +23,21 @@ export function TopicSidebar({
   const { setOpenMobile } = useSidebar();
 
   return (
-    <Sidebar aria-label="专题导航">
-      <SidebarHeader className="p-4 font-semibold">
+    <Sidebar aria-label="专题导航" className="av-sidebar">
+      <SidebarHeader className="av-sidebar-title p-4 font-semibold">
         数据结构与算法
       </SidebarHeader>
       <SidebarContent>
         {TOPIC_GROUPS_VIEW.map((group) => (
           <SidebarGroup key={group.id}>
-            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            <SidebarGroupLabel className="av-group-label">{group.label}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item) => {
                   const active = topic === item.id;
                   return (
                     <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton asChild isActive={active}>
+                      <SidebarMenuButton asChild isActive={active} className={active ? "av-menu-active" : undefined}>
                         <a
                           href={`#/${item.id}`}
                           aria-current={active ? "page" : undefined}
