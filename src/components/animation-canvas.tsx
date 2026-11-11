@@ -1,4 +1,5 @@
 import { useId, useMemo } from "react";
+import { largerComparedId } from "./comparison";
 import {
   AnimatePresence,
 } from "motion/react";
@@ -14,6 +15,7 @@ import {
   SceneFormula,
   SceneHeapCell,
   SceneNode,
+  SceneComparisonCrown,
   ScenePointer,
   SceneTail,
   SceneUnionCell,
@@ -56,6 +58,7 @@ export function AnimationCanvas({
 }) {
   const linked = kind === "linked-list";
   const array = kind === "array";
+  const crownedId = array ? largerComparedId(frame) : undefined;
   const arrowId = useId().replace(/:/g, "");
   const scene = useMemo(
     () =>
@@ -69,6 +72,7 @@ export function AnimationCanvas({
       }),
     [frame, previous, kind, capacity, treeDepth, hashChainCapacity],
   );
+  const crownedNode = scene.nodes.find(node => node.id === crownedId);
   const progress = useAnimationClock({
     frame,
     previous,
@@ -278,6 +282,9 @@ export function AnimationCanvas({
           >
             {scene.empty.text}
           </text>
+        )}
+        {crownedNode && (
+          <SceneComparisonCrown node={crownedNode} progress={progress} times={scene.times} />
         )}
       </svg>
       <ScrollBar orientation="horizontal" />

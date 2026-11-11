@@ -24,6 +24,7 @@ export function quickSortTrace(values: number[]): Frame[] {
   ) {
     frames.push({
       items: items.map((item) => ({ ...item })),
+      comparison: anchor === "compare" ? [items[active[0]].id, items[active[1]].id] : undefined,
       anchor,
       narration,
       pointers,

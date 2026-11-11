@@ -74,6 +74,8 @@ export function insertionSortTrace(values: number[]): Frame[] {
       items: items.map(item => ({ ...item })),
       arraySlots: slots.map(item => item ? { ...item } : null),
       held: held ? { ...held } : undefined,
+      comparison: anchor === "compare" && held && j !== undefined && slots[j]
+        ? [slots[j]!.id, held.id] : undefined,
       anchor, narration, pointers: anchor === "start" && items.length ? { low: 0, high: items.length - 1 } : pointers,
       range: anchor === "start" ? { low: 0, high: items.length - 1 } : undefined,
       active: Object.values(pointers),

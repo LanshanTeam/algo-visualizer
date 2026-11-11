@@ -90,6 +90,21 @@ export function SceneNode({
   );
 }
 
+/** 顶层比较标记，与节点共享轨迹和时钟，顶部保留描边空间。 */
+export function SceneComparisonCrown({ node, progress, times }: ClockProps & {
+  node: AnimationScene["nodes"][number];
+}) {
+  const x = useTransform(progress, p => sampleTrack(node.x, times, p) + node.width / 2 - 9);
+  const y = useTransform(progress, p => Math.max(2, sampleTrack(node.y, times, p) - 14));
+  return (
+    <motion.g data-comparison-crown={node.id} style={{ x, y }} pointerEvents="none" role="img" aria-label="当前比较中较大的数">
+      <title>当前比较中较大的数</title>
+      <path d="M 1 3 L 5 6 L 9 1 L 13 6 L 17 3 L 15 11 H 3 Z" fill="#fbbf24" stroke="#b45309" strokeWidth="1.2" strokeLinejoin="round" />
+      <path d="M 3 13 H 15" stroke="#b45309" strokeWidth="1.2" strokeLinecap="round" />
+    </motion.g>
+  );
+}
+
 /** Auxiliary copies are not primary identities; visibility uses the shared clock. */
 export function AuxiliaryNode({ node, progress, times }: ClockProps & {
   node: NonNullable<AnimationScene["auxiliary"]>["nodes"][number];
