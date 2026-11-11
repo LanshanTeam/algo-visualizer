@@ -1,4 +1,3 @@
-import { Badge } from "./ui/badge";
 import { GraphTreeCanvas } from "./graph-tree-canvas";
 import type { Frame } from "../core/types";
 import { useAnimationClock } from "./workspace/use-animation-clock";
@@ -40,12 +39,12 @@ export function GraphAnimationCanvas({ frame, previous, duration, paused, onAnim
         ariaLabel="图的节点、边与遍历状态"
       />
       {frame.queue && (
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs" aria-label="BFS 队列">
-          <span className="text-muted-foreground">队列</span>
+        <div className="meta-row" aria-label="BFS 队列">
+          <span className="lbl">队列</span>
           {frame.queue.length === 0 ? (
-            <Badge variant="secondary" className="font-mono">空</Badge>
+            <span className="chip mono secondary">空</span>
           ) : frame.queue.map((id) => (
-            <Badge variant="secondary" className="font-mono" key={id}>{String.fromCharCode(65 + Number(id))}</Badge>
+            <span className="chip mono secondary" key={id}>{String.fromCharCode(65 + Number(id))}</span>
           ))}
         </div>
       )}

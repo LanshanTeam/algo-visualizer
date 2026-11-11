@@ -3,7 +3,6 @@ import { largerComparedId } from "./comparison";
 import {
   AnimatePresence,
 } from "motion/react";
-import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 import { createAnimationScene } from "./animation-scene";
 import type { Frame, ImplementedSceneKind } from "../core/types";
 import {
@@ -83,7 +82,7 @@ export function AnimationCanvas({
   });
 
   return (
-    <ScrollArea className={array ? "w-full [&_[data-radix-scroll-area-viewport]>div]:!block" : "w-full"}>
+    <div className={array ? "stage-scroll w-full [&_[data-radix-scroll-area-viewport]>div]:!block" : "stage-scroll w-full"}>
       <svg
         data-animation-stage
         viewBox={`0 0 ${scene.width} ${scene.height}`}
@@ -287,7 +286,6 @@ export function AnimationCanvas({
           <SceneComparisonCrown node={crownedNode} progress={progress} times={scene.times} />
         )}
       </svg>
-      <ScrollBar orientation="horizontal" />
-    </ScrollArea>
+    </div>
   );
 }

@@ -1,6 +1,5 @@
 import { useId } from "react";
 import { motion, useMotionValue, useReducedMotion, useTransform, type MotionValue } from "motion/react";
-import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 import { palette } from "./canvas-primitives";
 
 export type GraphTreeTone = "idle" | "active" | "settled" | "pivot" | "muted";
@@ -169,7 +168,7 @@ export function GraphTreeCanvas({
   const markerId = `graph-tree-arrow-${useId().replace(/:/g, "")}`;
 
   return (
-    <ScrollArea className={className ?? "w-full"}>
+    <div className="stage-scroll w-full">
       <svg
         data-graph-tree-stage
         viewBox={`0 0 ${width} ${height}`}
@@ -188,7 +187,6 @@ export function GraphTreeCanvas({
           return <GraphTreeNodeView key={node.id} node={node} previous={previous} progress={progress} reduced={reduced} nodeRadius={nodeRadius} />;
         })}
       </svg>
-      <ScrollBar orientation="horizontal" />
-    </ScrollArea>
+    </div>
   );
 }
