@@ -14,10 +14,12 @@ import {
 import { PlannedTopicPage } from "./components/planned-topic";
 import { TopicSidebar } from "./components/topic-sidebar";
 import { TopicWorkspace } from "./components/topic-workspace";
+import { AboutPage } from "./components/about-page";
 import { DEFAULT_TOPIC_ID, TOPICS } from "./topics/registry";
 
 function readTopic(): string {
   const id = location.hash.replace(/^#\/?/, "");
+  if (id === "about") return id;
   return TOPICS[id] ? id : DEFAULT_TOPIC_ID;
 }
 
@@ -33,6 +35,7 @@ export default function App() {
     if (location.hash !== `#/${next}`) location.hash = `/${next}`;
   }, []);
   const topic = TOPICS[topicId];
+  const isAbout = topicId === "about";
 
   return (
     <SidebarProvider>
@@ -41,8 +44,8 @@ export default function App() {
         <header className="flex h-16 shrink-0 items-center gap-3 border-b px-4 md:px-6">
           <SidebarTrigger aria-label="切换导航" />
           <Separator orientation="vertical" className="h-4" />
-          <h1 className="min-w-0 truncate text-lg font-semibold">{topic.title}</h1>
-          {topic.status === "planned" && (
+          <h1 className="min-w-0 truncate text-lg font-semibold">{isAbout ? "关于" : topic.title}</h1>
+          {!isAbout && topic.status === "planned" && (
             <Badge variant="secondary">建设中</Badge>
           )}
           <div
@@ -76,7 +79,9 @@ export default function App() {
           </div>
         </header>
         <div className="mx-auto w-full max-w-[1600px] p-4 md:p-6 xl:min-h-0 xl:flex-1">
-          {topic.status === "ready" ? (
+          {isAbout ? (
+            <AboutPage />
+          ) : topic.status === "ready" ? (
             <TopicWorkspace key={topic.id} topic={topic} />
           ) : (
             <div className="flex flex-col gap-6 xl:h-full xl:flex-row">
