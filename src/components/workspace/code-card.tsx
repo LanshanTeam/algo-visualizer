@@ -106,7 +106,7 @@ export function CodeCard({
                       </div>
                     ))}
                   </pre>
-                  <ScrollBar orientation="horizontal" />
+                  <ScrollBar />
                 </ScrollArea>
               </TabsContent>
             ))}

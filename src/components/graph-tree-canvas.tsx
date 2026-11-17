@@ -37,11 +37,11 @@ export interface GraphTreeCanvasProps {
 }
 
 const colors: Record<GraphTreeTone, { stroke: string; fill: string; text: string }> = {
-  idle: { ...palette.idle, text: "#1e293b" },
-  active: { ...palette.active, text: "#1e3a8a" },
-  settled: { ...palette.settled, text: "#14532d" },
-  pivot: { ...palette.pivot, text: "#78350f" },
-  muted: { stroke: "#cbd5e1", fill: "#f8fafc", text: "#94a3b8" },
+  idle: { ...palette.idle, text: "#e2eaf6" },
+  active: { ...palette.active, text: "#bfdbfe" },
+  settled: { ...palette.settled, text: "#bbf7d0" },
+  pivot: { ...palette.pivot, text: "#fde68a" },
+  muted: { stroke: "#3b4d66", fill: "#101a28", text: "#5b6f8a" },
 };
 
 function edgePath(
@@ -102,7 +102,7 @@ function GraphTreeNodeView({
       <text y="5" textAnchor="middle" fill={tone.text} fontFamily="monospace" fontSize="16">{node.label}</text>
       {node.detail !== undefined && (
         <g pointerEvents="none">
-          <rect x={-18} y={nodeRadius + 5} width="36" height="17" rx="4" fill="white" opacity="0.92" />
+          <rect x={-18} y={nodeRadius + 5} width="36" height="17" rx="4" fill="#16212f" opacity="0.92" />
           <text y={nodeRadius + 17} textAnchor="middle" className="fill-muted-foreground font-mono" fontSize="12">{node.detail}</text>
         </g>
       )}
@@ -188,7 +188,7 @@ export function GraphTreeCanvas({
           return <GraphTreeNodeView key={node.id} node={node} previous={previous} progress={progress} reduced={reduced} nodeRadius={nodeRadius} />;
         })}
       </svg>
-      <ScrollBar orientation="horizontal" />
+      <ScrollBar />
     </ScrollArea>
   );
 }
