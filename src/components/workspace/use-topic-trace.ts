@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { clampIndex, parseValues } from "../../core/trace";
 import type { Language, TraceInput } from "../../core/types";
 import type { ReadyTopic } from "../../topics/types";
+import { copyText } from "../../lib/clipboard";
 
 const DEFAULT_INDEX = 2;
 const DEFAULT_VALUE = 31;
@@ -197,7 +198,7 @@ export function useTopicTrace(topic: ReadyTopic) {
   }
   async function copy() {
     try {
-      await navigator.clipboard.writeText(
+      await copyText(
         code.map((line) => line.text).join("\n"),
       );
       setCopied(true);
