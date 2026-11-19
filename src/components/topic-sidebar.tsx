@@ -1,3 +1,4 @@
+import { Info } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -5,6 +6,7 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
+  SidebarFooter,
   SidebarMenu,
   SidebarMenuBadge,
   SidebarMenuButton,
@@ -69,6 +71,26 @@ export function TopicSidebar({
           </SidebarGroup>
         ))}
       </SidebarContent>
+      <SidebarFooter className="border-t p-2">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={topic === "about"}>
+              <a
+                href="#/about"
+                aria-current={topic === "about" ? "page" : undefined}
+                onClick={(event) => {
+                  event.preventDefault();
+                  onNavigate("about");
+                  setOpenMobile(false);
+                }}
+              >
+                <Info />
+                <span>关于</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }
