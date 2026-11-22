@@ -1,6 +1,9 @@
+import type { MouseEvent } from "react";
+import { Info } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -11,6 +14,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "./ui/sidebar";
+import { ABOUT_ROUTE } from "./about-page";
 import { TOPIC_GROUPS_VIEW } from "../topics/registry";
 
 export function TopicSidebar({
@@ -21,6 +25,13 @@ export function TopicSidebar({
   onNavigate: (next: string) => void;
 }) {
   const { setOpenMobile } = useSidebar();
+  const isAbout = topic === ABOUT_ROUTE;
+
+  function navigateTo(event: MouseEvent<HTMLAnchorElement>, next: string) {
+    event.preventDefault();
+    onNavigate(next);
+    setOpenMobile(false);
+  }
 
   return (
     <Sidebar aria-label="专题导航">
@@ -46,11 +57,7 @@ export function TopicSidebar({
                               ? "text-muted-foreground"
                               : undefined
                           }
-                          onClick={(event) => {
-                            event.preventDefault();
-                            onNavigate(item.id);
-                            setOpenMobile(false);
-                          }}
+                          onClick={(event) => navigateTo(event, item.id)}
                         >
                           <item.icon />
                           <span>{item.title}</span>
@@ -69,6 +76,22 @@ export function TopicSidebar({
           </SidebarGroup>
         ))}
       </SidebarContent>
+      <SidebarFooter className="border-t p-2">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={isAbout}>
+              <a
+                href={`#/${ABOUT_ROUTE}`}
+                aria-current={isAbout ? "page" : undefined}
+                onClick={(event) => navigateTo(event, ABOUT_ROUTE)}
+              >
+                <Info />
+                <span>关于</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }
