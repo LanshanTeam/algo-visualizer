@@ -1,15 +1,19 @@
+import type { ComponentType, ReactNode } from "react";
 import { ArrowUpRight, Building2, Code2, Lightbulb, Users } from "lucide-react";
+import { version } from "../../package.json";
 import { Button } from "./ui/button";
+
+export const ABOUT_ROUTE = "about";
 
 const REPO_URL = "https://github.com/LanshanTeam/algo-visualizer";
 
-const contributors = [
-  { name: "a-dastra", url: "https://github.com/a-dastra" },
-  { name: "SkyAerope", url: "https://github.com/SkyAerope" },
-  { name: "91king69", url: "https://github.com/91king69" },
-  { name: "YoruAmeKaze", url: "https://github.com/YoruAmeKaze" },
-  { name: "KirisameMarisa114514", url: "https://github.com/KirisameMarisa114514" },
-];
+const CONTRIBUTORS = [
+  "a-dastra",
+  "SkyAerope",
+  "91king69",
+  "YoruAmeKaze",
+  "KirisameMarisa114514",
+] as const;
 
 function GitHubIcon() {
   return (
@@ -19,9 +23,29 @@ function GitHubIcon() {
   );
 }
 
+function AboutBlock({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <article className="space-y-3">
+      <div className="flex items-center gap-2">
+        <Icon className="size-4 text-muted-foreground" aria-hidden />
+        <h3 className="font-semibold">{title}</h3>
+      </div>
+      {children}
+    </article>
+  );
+}
+
 export function AboutPage() {
   return (
-    <main className="mx-auto w-full max-w-5xl space-y-10 py-2 sm:py-6">
+    <div className="mx-auto w-full max-w-5xl space-y-10 py-2 sm:py-6">
       <section className="max-w-3xl space-y-4">
         <h2 className="text-3xl font-semibold">数据结构与算法可视化</h2>
         <p className="text-base leading-7 text-muted-foreground">
@@ -37,56 +61,40 @@ export function AboutPage() {
       </section>
 
       <section className="grid gap-8 border-t pt-7 sm:grid-cols-2" aria-label="团队与项目初衷">
-        <article className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Building2 className="size-4 text-muted-foreground" aria-hidden="true" />
-            <h3 className="font-semibold">我们是谁</h3>
-          </div>
+        <AboutBlock icon={Building2} title="我们是谁">
           <p className="text-sm leading-6 text-muted-foreground">
             我们是重庆邮电大学蓝山工作室。本项目由工作室成员共同开发与维护，希望以更直观的交互方式，陪伴大家学习数据结构与算法。
           </p>
-        </article>
-        <article className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Lightbulb className="size-4 text-muted-foreground" aria-hidden="true" />
-            <h3 className="font-semibold">为什么做</h3>
-          </div>
+        </AboutBlock>
+        <AboutBlock icon={Lightbulb} title="为什么做">
           <p className="text-sm leading-6 text-muted-foreground">
             学习算法时，纸面推导与最终代码之间往往隔着一段难以想象的动态过程。我们希望把这段过程展开，让结构变化、条件判断与代码执行同步可见，帮助学习者真正看懂每一步为何如此发生。
           </p>
-        </article>
+        </AboutBlock>
       </section>
 
       <section className="grid gap-8 border-t pt-7 sm:grid-cols-2" aria-label="参与成员与技术实现">
-        <article className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Users className="size-4 text-muted-foreground" aria-hidden="true" />
-            <h3 className="font-semibold">参与成员</h3>
-          </div>
+        <AboutBlock icon={Users} title="参与成员">
           <div className="flex flex-wrap gap-2">
-            {contributors.map((member) => (
-              <Button key={member.name} variant="outline" size="sm" asChild>
-                <a href={member.url} target="_blank" rel="noreferrer">
-                  @{member.name}
+            {CONTRIBUTORS.map((name) => (
+              <Button key={name} variant="outline" size="sm" asChild>
+                <a href={`https://github.com/${name}`} target="_blank" rel="noreferrer">
+                  @{name}
                 </a>
               </Button>
             ))}
           </div>
-        </article>
-        <article className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Code2 className="size-4 text-muted-foreground" aria-hidden="true" />
-            <h3 className="font-semibold">技术实现</h3>
-          </div>
+        </AboutBlock>
+        <AboutBlock icon={Code2} title="技术实现">
           <p className="text-sm leading-6 text-muted-foreground">
             基于 React、TypeScript 与 Vite 构建，界面采用 shadcn/ui，算法动画由 SVG 画布与 Motion 驱动。
           </p>
-        </article>
+        </AboutBlock>
       </section>
 
       <footer className="border-t pt-5 text-xs text-muted-foreground">
-        数据结构与算法可视化 · v1.0.0
+        数据结构与算法可视化 · v{version}
       </footer>
-    </main>
+    </div>
   );
 }

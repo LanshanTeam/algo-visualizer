@@ -14,38 +14,39 @@ import {
 import { PlannedTopicPage } from "./components/planned-topic";
 import { TopicSidebar } from "./components/topic-sidebar";
 import { TopicWorkspace } from "./components/topic-workspace";
-import { AboutPage } from "./components/about-page";
+import { ABOUT_ROUTE, AboutPage } from "./components/about-page";
 import { DEFAULT_TOPIC_ID, TOPICS } from "./topics/registry";
 
-function readTopic(): string {
+function readRoute(): string {
   const id = location.hash.replace(/^#\/?/, "");
-  if (id === "about") return id;
+  if (id === ABOUT_ROUTE) return ABOUT_ROUTE;
   return TOPICS[id] ? id : DEFAULT_TOPIC_ID;
 }
 
 export default function App() {
-  const [topicId, setTopicId] = useState(readTopic);
+  const [route, setRoute] = useState(readRoute);
   useEffect(() => {
-    const change = () => setTopicId(readTopic());
+    const change = () => setRoute(readRoute());
     addEventListener("hashchange", change);
     return () => removeEventListener("hashchange", change);
   }, []);
   const navigate = useCallback((next: string) => {
-    setTopicId(next);
+    setRoute(next);
     if (location.hash !== `#/${next}`) location.hash = `/${next}`;
   }, []);
-  const topic = TOPICS[topicId];
-  const isAbout = topicId === "about";
+  const topic = route === ABOUT_ROUTE ? undefined : TOPICS[route];
 
   return (
     <SidebarProvider>
-      <TopicSidebar topic={topicId} onNavigate={navigate} />
-      <SidebarInset className="min-w-0 xl:h-dvh">
+      <TopicSidebar topic={route} onNavigate={navigate} />
+      <SidebarInset className={topic ? "min-w-0 xl:h-dvh" : "min-w-0"}>
         <header className="flex h-16 shrink-0 items-center gap-3 border-b px-4 md:px-6">
           <SidebarTrigger aria-label="切换导航" />
           <Separator orientation="vertical" className="h-4" />
-          <h1 className="min-w-0 truncate text-lg font-semibold">{isAbout ? "关于" : topic.title}</h1>
-          {!isAbout && topic.status === "planned" && (
+          <h1 className="min-w-0 truncate text-lg font-semibold">
+            {topic ? topic.title : "关于"}
+          </h1>
+          {topic?.status === "planned" && (
             <Badge variant="secondary">建设中</Badge>
           )}
           <div
@@ -79,7 +80,7 @@ export default function App() {
           </div>
         </header>
         <div className="mx-auto w-full max-w-[1600px] p-4 md:p-6 xl:min-h-0 xl:flex-1">
-          {isAbout ? (
+          {!topic ? (
             <AboutPage />
           ) : topic.status === "ready" ? (
             <TopicWorkspace key={topic.id} topic={topic} />
