@@ -33,7 +33,7 @@ const COLUMNS: Record<number, string> = {
 const legendTone: Record<LegendEntry["tone"], string> = {
   active: "border-[#006C49]/30 bg-[#eaf6f0] text-[#006C49]",
   pivot: "border-amber-300 bg-amber-50 text-amber-700",
-  settled: "border-green-300 bg-green-50 text-green-700",
+  settled: "border-[#7C3AED]/30 bg-[#F5F3FF] text-[#7C3AED]",
   idle: "",
 };
 
