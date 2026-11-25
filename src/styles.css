@@ -98,11 +98,11 @@
 }
 .header-brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .header-logos { display: flex; flex-shrink: 0; align-items: center; gap: 14px; }
-.logo-divider { width: 1px; height: 24px; background: rgba(255,255,255,.32); }
+.logo-divider { width: 1px; height: 24px; flex-shrink: 0; background: rgba(255,255,255,.32); }
 .header-titles { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
-.header-titles strong { font-size: 17px; letter-spacing: .4px; white-space: nowrap; }
+.header-titles strong { overflow: hidden; text-overflow: ellipsis; font-size: 17px; letter-spacing: .4px; white-space: nowrap; }
 .app-header .header-menu:hover { color: white; background: rgba(255,255,255,.12); }
-.header-menu { display: none; }
+.header-menu { display: inline-flex; color: #fff; flex-shrink: 0; }
 .shell-body { display: flex; flex: 1; min-width: 0; }
 .topic-sidebar { top: 56px; height: calc(100svh - 56px); }
 .sidebar-heading { padding: 16px 18px 8px; }
