@@ -24,7 +24,7 @@ export function PlaybackBar({
     trace;
 
   return (
-    <div className="shrink-0 space-y-3 border-t px-6 pb-6 pt-4">
+    <div className="workspace-card-content playback-bar shrink-0 space-y-3 border-t pt-4">
       <p
         className="min-h-6 text-sm leading-relaxed max-sm:min-h-10"
         aria-live="polite"
