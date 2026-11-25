@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: "Microsoft YaHei UI", "PingFang SC", sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Roboto, "Helvetica Neue", Arial, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -36,26 +36,26 @@
 
 :root {
   color-scheme: light;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --background: #f5f7f5;
+  --foreground: #16201a;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --primary: #006c49;
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --secondary: #eaf6f0;
+  --secondary-foreground: #00583c;
+  --muted: #f4f6f4;
+  --muted-foreground: #66736b;
+  --accent: #eaf6f0;
+  --accent-foreground: #00452f;
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --sidebar: oklch(0.985 0 0);
+  --border: #e6ebe7;
+  --input: #d5ded7;
+  --ring: #006c49;
+  --sidebar: #fff;
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);
@@ -78,4 +78,69 @@
   :is(:disabled, [aria-disabled="true"], [data-disabled]) {
     cursor: not-allowed;
   }
+}
+
+.app-shell { flex-direction: column; }
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 16px;
+  height: 56px;
+  padding: 0 26px;
+  color: #fff;
+  background: #006c49;
+  box-shadow: 0 2px 12px -4px rgba(15,45,20,.45);
+}
+.header-brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.header-logos { display: flex; flex-shrink: 0; align-items: center; gap: 14px; }
+.logo-divider { width: 1px; height: 24px; background: rgba(255,255,255,.32); }
+.header-titles { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
+.header-titles strong { font-size: 17px; letter-spacing: .4px; white-space: nowrap; }
+.app-header .header-menu:hover { color: white; background: rgba(255,255,255,.12); }
+.header-menu { display: none; }
+.shell-body { display: flex; flex: 1; min-width: 0; }
+.topic-sidebar { top: 56px; height: calc(100svh - 56px); }
+.sidebar-heading { padding: 16px 18px 8px; }
+.sidebar-search { position: relative; }
+.sidebar-search > svg { position: absolute; left: 11px; top: 12px; color: #8b968f; }
+.sidebar-search input { padding-left: 33px; font-size: 13px; background: #fafbfa; box-shadow: none; }
+[data-sidebar="content"] { padding: 0 10px 8px; gap: 4px; }
+[data-sidebar="group"] { padding: 4px; }
+[data-sidebar="group-label"] { height: 28px; color: #8b968f; font-size: 11px; letter-spacing: 1px; }
+[data-sidebar="menu"] { gap: 2px; }
+[data-sidebar="menu-button"] { height: 34px; padding: 8px 12px; border-radius: 10px; color: #4a5850; }
+[data-sidebar="menu-button"][data-active="true"] { color: #00452f; font-weight: 600; background: #eaf6f0; }
+[data-sidebar="menu-button"][data-active="true"] svg { color: #006c49; }
+[data-sidebar="menu-badge"] { top: 8px; color: #8b968f; font-size: 10px; }
+.sidebar-empty { padding: 16px 12px; font-size: 13px; line-height: 1.7; color: #66736b; }
+.app-main { min-width: 0; background: transparent; }
+.page { display: flex; flex: 1; flex-direction: column; width: 100%; max-width: 1480px; min-width: 0; margin: 0 auto; padding: 22px 30px 16px; outline: none; }
+.page-breadcrumb { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 18px; color: #8b968f; font-size: 12px; }
+.page-breadcrumb [aria-current] { color: #4a5850; }
+.workspace-content { min-width: 0; flex: 1; }
+.skip-link { position: fixed; left: 16px; top: -60px; z-index: 100; border-radius: 8px; padding: 10px 16px; color: #00452f; background: #fff; }
+.skip-link:focus { top: 8px; }
+.lucide { stroke-width: 1.8; }
+
+@media (min-width: 1280px) {
+  /* 为输入区、完整画布与播放条保留空间，矮屏通过页面滚动查看。 */
+  .workspace-content-ready { height: max(660px, calc(100dvh - 140px)); flex: none; }
+}
+@media (max-width: 900px) {
+  .app-header { padding: 0 16px; }
+  .header-brand { gap: 10px; }
+  .header-menu { display: inline-flex; color: #fff; flex-shrink: 0; }
+  .header-titles strong { font-size: 15px; }
+  .page { padding: 20px 18px 18px; }
+}
+@media (max-width: 600px) {
+  .header-titles strong { font-size: 14px; letter-spacing: 0; }
+  .header-logos { gap: 8px; }
+  .page { padding: 18px 12px; }
+  .page-breadcrumb { font-size: 11px; gap: 5px; }
 }

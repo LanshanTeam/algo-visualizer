@@ -38,7 +38,9 @@ pnpm build
 
 `src/components/ui/` 由 shadcn 官方 CLI 生成。页面直接使用 Sidebar、Card、Button、Input、Label、Select、Slider、Tabs、Badge、Alert、Table、Separator、ScrollArea 和 Tooltip；移动导航复用 Sidebar 内置的 Sheet。
 
-`src/styles.css` 仅保留 Tailwind / shadcn 的白色主题变量和基础样式。没有额外的按钮、卡片、表单或导航样式。
+界面遵循 UI Maker 的高校系统设计规范：56px 深绿顶栏、240px 白色专题导航、浅灰内容底色与 16px 圆角卡片。`src/styles.css` 定义主题变量、页面外壳和响应式样式；共享按钮与输入框使用 10px 圆角。宽度 ≤900px 时使用抽屉导航，专题搜索支持名称、英文标识和分组名称。保留现有算法、动画、播放控制与多语言代码功能。
+
+顶栏右侧使用原 Logo 的透明白字版本（`src/assets/*-white.svg`），保留图形配色及原有字形，通过 SVG 分区和颜色矩阵将文字渲染为白色，适配深绿底色。移动端延续简化展示。内容区由面包屑直接进入专题工作台或关于页。
 
 部分生成模板使用旧版 Tailwind 变量写法，已适配为 Tailwind 4 的 `var()` 语法，并修正移动断点 Hook 的导入路径。标签已本地化；Slider 将无障碍名称传给滑块。
 

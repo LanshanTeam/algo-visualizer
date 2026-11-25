@@ -135,7 +135,7 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
         <div data-array-controls={array || undefined} className={array ? "grid grid-cols-[minmax(0,1fr)_6rem] gap-3" : undefined}>
         <div className="min-w-0 space-y-2">
           <Label htmlFor="values">{controls.dataLabel}</Label>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <Input
               id="values"
               value={input}
@@ -144,12 +144,13 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
                 if (event.key === "Enter") apply();
               }}
             />
-            <Button variant="outline" onClick={apply}>
+            <Button variant="outline" className="h-10 shrink-0" onClick={apply}>
               应用
             </Button>
             {controls.randomizable !== false && (
             <IconButton
               label="随机数据"
+              className="h-10 w-10 shrink-0"
               onClick={() => {
                 // 队列的初始 front 本身占槽位，生成时要一起让出来。
                 const next = randomValues(
