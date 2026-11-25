@@ -9,9 +9,9 @@ import { connectionPathAt, sampleTrack } from "./scene-geometry";
 import type { AnimationScene, SceneLink } from "./animation-scene";
 
 export const palette = {
-  active: { stroke: "#2563eb", fill: "#eff6ff" },
+  active: { stroke: "#006C49", fill: "#eff6ff" },
   pivot: { stroke: "#d97706", fill: "#fffbeb" },
-  settled: { stroke: "#15803d", fill: "#f0fdf4" },
+  settled: { stroke: "#7C3AED", fill: "#F5F3FF" },
   idle: { stroke: "#cbd5e1", fill: "#fff" },
 };
 export type ClockProps = { progress: MotionValue<number>; times: number[] };

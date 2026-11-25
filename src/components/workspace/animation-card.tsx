@@ -31,9 +31,9 @@ const COLUMNS: Record<number, string> = {
   3: "grid-cols-3",
 };
 const legendTone: Record<LegendEntry["tone"], string> = {
-  active: "border-blue-300 bg-blue-50 text-blue-700",
+  active: "border-[#006C49]/30 bg-[#eaf6f0] text-[#006C49]",
   pivot: "border-amber-300 bg-amber-50 text-amber-700",
-  settled: "border-green-300 bg-green-50 text-green-700",
+  settled: "border-[#7C3AED]/30 bg-[#F5F3FF] text-[#7C3AED]",
   idle: "",
 };
 
@@ -135,7 +135,7 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
         <div data-array-controls={array || undefined} className={array ? "grid grid-cols-[minmax(0,1fr)_6rem] gap-3" : undefined}>
         <div className="min-w-0 space-y-2">
           <Label htmlFor="values">{controls.dataLabel}</Label>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <Input
               id="values"
               value={input}
@@ -144,12 +144,13 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
                 if (event.key === "Enter") apply();
               }}
             />
-            <Button variant="outline" onClick={apply}>
+            <Button variant="outline" className="h-10 shrink-0" onClick={apply}>
               应用
             </Button>
             {controls.randomizable !== false && (
             <IconButton
               label="随机数据"
+              className="h-10 w-10 shrink-0"
               onClick={() => {
                 // 队列的初始 front 本身占槽位，生成时要一起让出来。
                 const next = randomValues(
