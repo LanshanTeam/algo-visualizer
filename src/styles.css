@@ -127,9 +127,30 @@
 .skip-link:focus { top: 8px; }
 .lucide { stroke-width: 1.8; }
 
-@media (min-width: 1280px) {
-  /* 为输入区、完整画布与播放条保留空间，矮屏通过页面滚动查看。 */
-  .workspace-content-ready { height: max(660px, calc(100dvh - 140px)); flex: none; }
+.workspace-panel { --panel-padding: 24px; }
+.workspace-card-header { padding: var(--panel-padding); }
+.workspace-card-content { padding-right: var(--panel-padding); padding-bottom: var(--panel-padding); padding-left: var(--panel-padding); }
+.workspace-divider { margin-right: calc(-1 * var(--panel-padding)); margin-left: calc(-1 * var(--panel-padding)); }
+.operation-controls { grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr)); }
+.operation-controls > div { min-width: 0; }
+.array-stage { min-height: 240px; }
+.code-card { container-type: inline-size; }
+.language-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.code-scroll { height: clamp(260px, 55dvh, 440px); }
+@container (min-width: 420px) {
+  .language-tabs { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+/* 矮屏让动画随内容展开，只滚动页面；双栏且足够高时才约束卡片高度。 */
+@media (min-width: 1280px) and (min-height: 900px) {
+  .workspace-content-ready { height: calc(100dvh - 130px); flex: none; min-height: 0; }
+  .topic-workspace { height: 100%; }
+  .workspace-panel, .workspace-fill { min-height: 0; }
+  .workspace-fill { flex: 1; }
+  .animation-body, .theory-panel { min-height: 0; overflow-y: auto; }
+  .code-scroll { height: 0; min-height: 0; flex: 1; }
+}
+@media (max-width: 600px) {
+  .workspace-panel { --panel-padding: 16px; }
 }
 @media (max-width: 900px) {
   .app-header { padding: 0 16px; }

@@ -16,7 +16,7 @@ describe("array screen alignment contract", () => {
       if (topic.status !== "ready") continue;
       const html = renderToStaticMarkup(<FirstFrame topic={topic} />);
       expect(html).toContain('data-array-controls="true"');
-      expect(html).toContain('grid-cols-[minmax(0,1fr)_6rem]');
+      expect(html).not.toContain('grid-cols-[minmax(0,1fr)_6rem]');
       expect(html).toMatch(/data-array-controls="true"[^>]*>[\s\S]*id="values"[\s\S]*<\/div><\/div><div data-orientation="horizontal"/);
       const region = html.match(/<div data-array-stage[^>]*>/)?.[0];
       expect(region).toContain("flex-1");

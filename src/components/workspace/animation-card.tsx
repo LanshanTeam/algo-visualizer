@@ -25,11 +25,6 @@ import { PlaybackBar } from "./playback-bar";
 import type { TopicTrace } from "./use-topic-trace";
 import type { LegendEntry, ReadyTopic } from "../../topics/types";
 
-const COLUMNS: Record<number, string> = {
-  1: "grid-cols-1",
-  2: "grid-cols-2",
-  3: "grid-cols-3",
-};
 const legendTone: Record<LegendEntry["tone"], string> = {
   active: "border-[#006C49]/30 bg-[#eaf6f0] text-[#006C49]",
   pivot: "border-amber-300 bg-amber-50 text-amber-700",
@@ -41,7 +36,7 @@ function ArrayStage({ array, children }: { array: boolean; children: ReactNode }
   // Only array scenes opt into the centered composition.
   if (!array) return <>{children}</>;
   return (
-    <div data-array-stage className="flex min-h-[300px] min-w-0 flex-1 items-center justify-center py-3">
+    <div data-array-stage className="array-stage flex min-w-0 flex-1 items-center justify-center py-3">
       <div data-array-composition className="flex w-full min-w-0 flex-col items-center gap-2">
         {children}
       </div>
@@ -123,21 +118,22 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
 
   return (
     <Card
-      className="flex min-w-0 flex-col xl:min-h-0 xl:flex-1"
+      className="workspace-panel animation-card flex min-w-0 flex-col xl:flex-1"
       aria-labelledby="animation-title"
     >
-      <CardHeader>
+      <CardHeader className="workspace-card-header">
         <CardTitle>
           <h2 id="animation-title">动画</h2>
         </CardTitle>
       </CardHeader>
-      <CardContent className={array ? "flex min-h-0 flex-1 flex-col gap-3 xl:overflow-y-auto" : "space-y-3 xl:min-h-0 xl:flex-1 xl:overflow-y-auto"}>
-        <div data-array-controls={array || undefined} className={array ? "grid grid-cols-[minmax(0,1fr)_6rem] gap-3" : undefined}>
+      <CardContent className={`animation-body workspace-card-content ${array ? "flex flex-1 flex-col gap-3" : "flex-1 space-y-3"}`}>
+        <div data-array-controls={array || undefined}>
         <div className="min-w-0 space-y-2">
           <Label htmlFor="values">{controls.dataLabel}</Label>
-          <div className="flex items-center gap-2">
+          <div className="data-input-row flex flex-wrap items-center gap-2">
             <Input
               id="values"
+              className="min-w-0 flex-[1_1_160px]"
               value={input}
               onChange={(event) => setInput(event.target.value)}
               onKeyDown={(event) => {
@@ -167,7 +163,7 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
         </div>
         </div>
         {fieldCount > 0 && (
-          <div className={`grid gap-3 ${COLUMNS[fieldCount]}`}>
+          <div className="operation-controls grid gap-3">
             {controls.operations && (
               <div className="space-y-2">
                 <Label htmlFor="operation">操作</Label>
@@ -177,7 +173,7 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
                     if (load(values, selected)) setOperation(selected);
                   }}
                 >
-                  <SelectTrigger id="operation">
+                  <SelectTrigger id="operation" className="h-10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -244,7 +240,7 @@ export function AnimationCard({ topic, trace }: { topic: ReadyTopic; trace: Topi
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        <Separator className="-mx-6 w-auto" />
+        <Separator className="workspace-divider w-auto" />
         <ArrayStage array={array}>
           {graph ? (
             <GraphAnimationCanvas

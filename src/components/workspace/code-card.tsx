@@ -1,4 +1,3 @@
-import { type CSSProperties } from "react";
 import { Check, Copy } from "lucide-react";
 import { Card, CardHeader } from "../ui/card";
 import { ScrollArea, ScrollBar } from "../ui/scroll-area";
@@ -22,14 +21,14 @@ export function CodeCard({
 
   return (
     <Card
-      className="flex min-w-0 flex-col xl:min-h-0 xl:flex-1"
+      className="workspace-panel code-card flex min-w-0 flex-col xl:flex-1"
       aria-labelledby="code-title"
     >
       <h2 id="code-title" className="sr-only">
         代码与原理
       </h2>
-      <Tabs defaultValue="code" className="flex flex-col xl:min-h-0 xl:flex-1">
-        <CardHeader>
+      <Tabs defaultValue="code" className="workspace-fill flex flex-col">
+        <CardHeader className="workspace-card-header">
           <TabsList
             aria-label="切换代码与原理"
             className={cn(
@@ -43,24 +42,23 @@ export function CodeCard({
         </CardHeader>
         <TabsContent
           value="code"
-          className="mt-0 flex min-h-0 flex-col px-6 pb-6 pt-0 xl:flex-1"
+          className="workspace-fill workspace-card-content mt-0 flex min-h-0 flex-col pt-0"
         >
           <Tabs
             value={language}
             onValueChange={(next) => setLanguage(next as Language)}
-            className="flex min-h-0 flex-col xl:flex-1"
+            className="workspace-fill flex min-h-0 flex-col"
           >
             <div className="flex items-center gap-1 sm:gap-2">
               <TabsList
                 aria-label="代码语言"
-                style={{ "--lang-cols": String(languages.length) } as CSSProperties}
-                className="grid h-auto w-full grid-cols-3 min-[360px]:h-9 min-[360px]:[grid-template-columns:repeat(var(--lang-cols),minmax(0,1fr))]"
+                className="language-tabs grid h-auto min-w-0 w-full"
               >
                 {languages.map((lang) => (
                   <TabsTrigger
                     key={lang}
                     value={lang}
-                    className="px-1 text-[11px] min-[400px]:text-xs sm:px-2 sm:text-sm"
+                    className="min-h-8 px-1 text-xs"
                   >
                     {lang}
                   </TabsTrigger>
@@ -78,10 +76,10 @@ export function CodeCard({
               <TabsContent
                 key={lang}
                 value={lang}
-                className="flex flex-col xl:min-h-0 xl:flex-1"
+                className="workspace-fill flex min-h-0 flex-col"
               >
                 <ScrollArea
-                  className="h-[440px] xl:min-h-0 xl:flex-1"
+                  className="code-scroll"
                   role="region"
                   aria-label={`${lang} 代码`}
                   tabIndex={0}
@@ -115,7 +113,7 @@ export function CodeCard({
         {hasTheory && (
           <TabsContent
             value="theory"
-            className="mt-0 grid content-start gap-6 px-6 pb-6 pt-0 text-sm leading-relaxed md:grid-cols-2 xl:min-h-0 xl:flex-1 xl:grid-cols-1 xl:overflow-y-auto"
+            className="theory-panel workspace-fill workspace-card-content mt-0 grid content-start gap-6 pt-0 text-sm leading-relaxed md:grid-cols-2 xl:grid-cols-1"
           >
             <TheoryContent blocks={topic.theory ?? []} />
           </TabsContent>
